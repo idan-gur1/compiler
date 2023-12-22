@@ -9,24 +9,44 @@ void printTree(NodeExprP expr) {
 
     //auto imIntFactor = dynamic_cast<NodeImIntFactorP>(expr);
 
-    if (auto imIntFactor = dynamic_cast<NodeImIntFactorP>(expr)) {
-        std::cout << "Factor: " << imIntFactor->val.val << std::endl;
+    if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
+        std::cout << "Terminal -> type: " << getTokenName(terminal->val.type) << "Terminal -> type: " << terminal->val.val << std::endl;
         return;
     }
 
-    if (auto divTerm = dynamic_cast<NodeMultTermP>(expr)) {
-        printTree(divTerm->left);
+    if (auto binaryExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
+        printTree(binaryExpr->left);
+        printTree(binaryExpr->right);
+
+        if (auto divExpr = dynamic_cast<NodeDivExprP>(binaryExpr)) {
+            std::cout << "div term" << std::endl;
+        }
+        else if (auto mulExpr = dynamic_cast<NodeMultExprP>(binaryExpr)) {
+            std::cout << "mult term" << std::endl;
+        }
+        else if (auto addExpr = dynamic_cast<NodeAddExprP>(binaryExpr)) {
+            std::cout << "add expr" << std::endl;
+        }
+        else if (auto subExpr = dynamic_cast<NodeSubExprP>(binaryExpr)) {
+            std::cout << "sub expr" << std::endl;
+        }
+
+    } else if (auto parenthesisExpr = dynamic_cast<ParenthesisNodeExprP>(expr)) {
+        std::cout << "entered parenthesis node" << std::endl;
+        printTree(parenthesisExpr->expr);
+        std::cout << "exited parenthesis node" << std::endl;
+    }
+
+    // old printing
+    /*if (auto divExpr = dynamic_cast<NodeDivExprP>(expr)) {
+        printTree(divExpr->left);
         std::cout << "div term" << std::endl;
-        printTree(divTerm->right);
+        printTree(divExpr->right);
     }
-    else if (auto mulTerm = dynamic_cast<NodeMultTermP>(expr)) {
-        printTree(mulTerm->left);
+    else if (auto mulExpr = dynamic_cast<NodeMultExprP>(expr)) {
+        printTree(mulExpr->left);
         std::cout << "mult term" << std::endl;
-        printTree(mulTerm->right);
-    }
-    else if (auto facTerm = dynamic_cast<NodeFactorTermP>(expr)) {
-        printTree(facTerm->factor);
-        std::cout << "factor term" << std::endl;
+        printTree(mulExpr->right);
     }
     else if (auto addExpr = dynamic_cast<NodeAddExprP>(expr)) {
         printTree(addExpr->left);
@@ -37,11 +57,7 @@ void printTree(NodeExprP expr) {
         printTree(subExpr->left);
         std::cout << "sub expr" << std::endl;
         printTree(subExpr->right);
-    }
-    else if (auto termExpr = dynamic_cast<NodeTermExprP>(expr)) {
-        printTree(termExpr->term);
-        std::cout << "term expr" << std::endl;
-    }
+    }*/
 }
 
 int main(int argc, char *argv[]) {
@@ -63,25 +79,24 @@ int main(int argc, char *argv[]) {
 
     std::string fileContent;
 
-    {
-        std::stringstream fileBuffer;
-        fileBuffer << inputFile.rdbuf();
+    auto *fileBuffer = new std::stringstream();
+    *fileBuffer << inputFile.rdbuf();
 
-        fileContent = fileBuffer.str();
-    }
+    fileContent = fileBuffer->str();
+
+    delete fileBuffer;
 
     inputFile.close();
 
-//    Lexer l(fileContent);
     auto *lexer = new Lexer(fileContent);
 
     std::vector<Token> tokens = lexer->analyseSource();
 
-    std::cout << std::setw(20) << std::left << "Token" << std::setw(20) << std::left << "Value" << std::endl;
+    /*std::cout << std::setw(20) << std::left << "Token" << std::setw(20) << std::left << "Value" << std::endl;
 
     for (const Token& t : tokens) {
         std::cout << std::setw(20) << std::left << getTokenName(t.type) << std::setw(20) << std::left << t.val << std::endl;
-    }
+    }*/
 
     auto parser = new Parser(lexer);
 

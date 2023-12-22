@@ -7,20 +7,11 @@
 
 #include "lexer.h"
 
+//region Expression nodes
 class NodeExpr {
 public:
     virtual ~NodeExpr() = default;
 };
-
-/*class NodeTerm : public NodeExpr{
-public:
-    ~NodeTerm() override = default;
-};
-
-class NodeFactor : public NodeTerm {
-public:
-    ~NodeFactor() override = default;
-};*/
 
 class BinaryNodeExpr : public NodeExpr {
 public:
@@ -59,85 +50,6 @@ public:
         delete expr;
     }
 };
-
-// old factors
-/*class NodeParenthesisFactor : public NodeFactor {
-public:
-    NodeExpr *expr;
-
-    explicit NodeParenthesisFactor(NodeExpr *expr) {
-        this->expr = expr;
-    }
-
-    ~NodeParenthesisFactor() override {
-        delete expr;
-    }
-};
-
-class NodeImIntFactor : public NodeFactor {
-public:
-    Token val;
-
-    explicit NodeImIntFactor(Token t) {
-        this->val = std::move(t);
-    }
-};
-
-class NodeIdentFactor : public NodeFactor {
-public:
-    Token val;
-
-    explicit NodeIdentFactor(Token t) {
-        this->val = std::move(t);
-    }
-};*/
-
-// old terms
-/*class NodeMultTerm : public NodeTerm {
-public:
-    NodeTerm *left;
-    NodeTerm *right;
-
-    NodeMultTerm(NodeTerm *left, NodeTerm *right) {
-        this->left = left;
-        this->right = right;
-    }
-
-    ~NodeMultTerm() override {
-        delete left;
-        delete right;
-    }
-};
-
-class NodeDivTerm : public NodeTerm {
-public:
-    NodeTerm *left;
-    NodeTerm *right;
-
-    NodeDivTerm(NodeTerm *left, NodeTerm *right) {
-        this->left = left;
-        this->right = right;
-    }
-
-    ~NodeDivTerm() override {
-        delete left;
-        delete right;
-    }
-};
-
-class NodeFactorTerm : public NodeTerm {
-public:
-    NodeFactor *factor;
-
-    explicit NodeFactorTerm(NodeFactor *factor) {
-        this->factor = factor;
-    }
-
-    ~NodeFactorTerm() override {
-        delete factor;
-    }
-};*/
-
 
 class NodeAddExpr : public BinaryNodeExpr {
 public:
@@ -180,37 +92,35 @@ public:
     explicit NodeIdentTerminal(Token t) : TerminalNodeExpr(std::move(t)) {
     }
 };
+//endregion
 
-/*class NodeTermExpr : public NodeExpr {
+//region Statement nodes
+class NodeAssignmentStmt {
 public:
-    NodeTerm *term;
+    Token ident;
+    NodeExpr *expr;
 
-    explicit NodeTermExpr(NodeTerm *term) {
-        this->term = term;
+    NodeAssignmentStmt(Token ident, NodeExpr *expr) {
+        this->ident = std::move(ident);
+        this->expr = expr;
     }
 
-    ~NodeTermExpr() override {
-        delete term;
+    ~NodeAssignmentStmt() {
+        delete expr;
     }
-};*/
+};
+//endregion
 
+typedef NodeAssignmentStmt NodeAssignmentStmtP;
 typedef NodeExpr *NodeExprP;
+typedef BinaryNodeExpr *BinaryNodeExprP;
+typedef ParenthesisNodeExpr *ParenthesisNodeExprP;
+typedef TerminalNodeExpr *TerminalNodeExprP;
 typedef NodeAddExpr *NodeAddExprP;
 typedef NodeSubExpr *NodeSubExprP;
 typedef NodeMultExpr *NodeMultExprP;
 typedef NodeDivExpr *NodeDivExprP;
 typedef NodeImIntTerminal *NodeImIntTerminalP;
 typedef NodeIdentTerminal *NodeIdentTerminalP;
-/*typedef NodeTermExpr *NodeTermExprP;
-
-typedef NodeTerm *NodeTermP;
-typedef NodeMultTerm *NodeMultTermP;
-typedef NodeDivTerm *NodeDivTermP;
-typedef NodeFactorTerm *NodeFactorTermP;
-
-typedef NodeFactor *NodeFactorP;
-typedef NodeImIntFactor *NodeImIntFactorP;
-typedef NodeIdentFactor *NodeIdentFactorP;
-typedef NodeParenthesisFactor *NodeParenthesisFactorP;*/
 
 #endif //COMPILER_TREENODES_H

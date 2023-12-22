@@ -12,10 +12,12 @@ public:
         this->lexer = lexer;
     }
 
+    NodeAssignmentStmt *parseStmt();
     NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
-    NodeTerm *parseTerm();
-    NodeFactor *parseFactor();
+    NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
+                        TokenType siblingOpType = TokenType::NO_TOKEN);
+    NodeExpr *parseFactor();
 
 private:
     Lexer *lexer;
