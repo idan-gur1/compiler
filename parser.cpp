@@ -42,9 +42,7 @@ NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
         exit(1);
     }
 
-    NodeExprP currentTerm = parseFactor(); // need to be
-    //Token currentToken = this->lexer->currentAndProceedToken();
-    //currentTerm = new NodeImIntTerminal(currentToken);
+    NodeExprP currentTerm = parseFactor();
 
     if (!this->lexer->hasNextToken() ||
         (this->lexer->currentToken().type != TokenType::mult &&
@@ -80,12 +78,11 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
         exit(1);
     }
 
-    NodeExprP currentExpr = parseTerm(); // need to be
-    //Token cur = this->lexer->currentAndProceedToken();
-    //currentExpr = new NodeImIntTerminal(cur);
+    NodeExprP currentExpr = parseTerm();
 
     if (!this->lexer->hasNextToken() ||
-        this->lexer->currentToken().type == TokenType::closeParenthesis) {
+        (this->lexer->currentToken().type != TokenType::plus &&
+         this->lexer->currentToken().type != TokenType::minus)) {
         if (leftSibling == nullptr) {
             return currentExpr;
         }
@@ -97,13 +94,6 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     }
 
     Token op = this->lexer->currentAndProceedToken();
-    //std::cout << "Token type:" << getTokenName(op.type) << "Value:" << op.val << std::endl;
-    // TODO fix this to work with statements
-    if (op.type != TokenType::plus && op.type != TokenType::minus) {
-        std::cout << "Syntax Error: unexpected token. ";
-        std::cout << "Received: " << getTokenName(op.type) << std::endl;
-        exit(1);
-    }
 
     NodeExprP leftExpr = currentExpr;
 
@@ -116,34 +106,42 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     }
 
     return parseExpr(leftExpr, op.type);
-
-    /*NodeExprP rightExpr;
-    NodeExprP leftExpr = nullptr;
-
-    if (leftSibling != nullptr) {
-        if (siblingOpType == TokenType::plus) {
-            leftExpr = new NodeAddExpr(leftSibling, currentExpr);
-        } else {
-            leftExpr = new NodeSubExpr(leftSibling, currentExpr);
-            std::cout << "test" << std::endl;
-        }
-        rightExpr = parseExpr(leftExpr);
-        std::cout << "test1" << std::endl;
-    } else {
-        rightExpr = parseExpr(currentExpr);
-    }
-
-    if (leftExpr == nullptr) {
-        return rightExpr;
-    }
-
-    if (op.type == TokenType::plus) {
-        return new NodeAddExpr(leftSibling, rightExpr);
-    }
-
-    return new NodeSubExpr(leftSibling, rightExpr);*/
 }
 
 NodeAssignmentStmt *Parser::parseStmt() {
-    return nullptr;
+    if (!this->lexer->hasNextToken()) {
+        std::cout << "Syntax Error: Token expected" << std::endl;
+        exit(1);
+    }
+
+    Token ident = this->lexer->currentAndProceedToken();
+
+    if (ident.type != TokenType::identifier) {
+        std::cout << "Syntax Error: L-type expression expected; identifier." << std::endl;
+        exit(1);
+    }
+
+    if (!this->lexer->hasNextToken()) {
+        std::cout << "Syntax Error: = expected" << std::endl;
+        exit(1);
+    }
+
+    if (this->lexer->currentAndProceedToken().type != TokenType::equal) {
+        std::cout << "Syntax Error: Unexpected token" << std::endl;
+        exit(1);
+    }
+
+    auto stmt = new NodeAssignmentStmt(ident, parseExpr());
+
+    if (!this->lexer->hasNextToken()) {
+        std::cout << "Syntax Error: ; expected" << std::endl;
+        exit(1);
+    }
+
+    if (this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
+        std::cout << "Syntax Error: Unexpected token" << std::endl;
+        exit(1);
+    }
+
+    return stmt;
 }

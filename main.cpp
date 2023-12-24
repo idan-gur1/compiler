@@ -5,7 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 
-void printTree(NodeExprP expr) {
+void printExprTree(NodeExprP expr) {
 
     //auto imIntFactor = dynamic_cast<NodeImIntFactorP>(expr);
 
@@ -15,8 +15,8 @@ void printTree(NodeExprP expr) {
     }
 
     if (auto binaryExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
-        printTree(binaryExpr->left);
-        printTree(binaryExpr->right);
+        printExprTree(binaryExpr->left);
+        printExprTree(binaryExpr->right);
 
         if (auto divExpr = dynamic_cast<NodeDivExprP>(binaryExpr)) {
             std::cout << "div term" << std::endl;
@@ -33,7 +33,7 @@ void printTree(NodeExprP expr) {
 
     } else if (auto parenthesisExpr = dynamic_cast<ParenthesisNodeExprP>(expr)) {
         std::cout << "entered parenthesis node" << std::endl;
-        printTree(parenthesisExpr->expr);
+        printExprTree(parenthesisExpr->expr);
         std::cout << "exited parenthesis node" << std::endl;
     }
 
@@ -100,11 +100,16 @@ int main(int argc, char *argv[]) {
 
     auto parser = new Parser(lexer);
 
-    NodeExprP expr = parser->parseExpr();
+    //NodeExprP expr = parser->parseExpr();
 
-    printTree(expr);
+    //printExprTree(expr);
 
-    delete expr;
+    auto stmt = parser->parseStmt();
+
+    printExprTree(stmt->expr);
+
+    //delete expr;
+    delete stmt;
     delete parser;
     delete lexer;
 

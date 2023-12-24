@@ -18,7 +18,7 @@ enum class TokenType {
     closeParenthesis,
     immediateInteger,
     identifier,
-    integerKeyword,
+    keyword,
     exit,
     semiColon
 };

@@ -111,7 +111,21 @@ public:
 };
 //endregion
 
-typedef NodeAssignmentStmt NodeAssignmentStmtP;
+class NodeScope {
+public:
+    std::vector<NodeAssignmentStmt *> stmts;
+
+    explicit NodeScope() = default;
+
+    ~NodeScope() {
+        for (int i = 0; i < stmts.size(); ++i) {
+            delete stmts[i];
+        }
+    }
+};
+
+typedef NodeScope *NodeScopeP;
+typedef NodeAssignmentStmt *NodeAssignmentStmtP;
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
 typedef ParenthesisNodeExpr *ParenthesisNodeExprP;

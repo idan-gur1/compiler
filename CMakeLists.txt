@@ -8,4 +8,6 @@ add_executable(compiler main.cpp
         lexer.h
         parser.cpp
         parser.h
-        treeNodes.h)
+        treeNodes.h
+        intermediateCodeGenerator.cpp
+        intermediateCodeGenerator.h)
