@@ -4,6 +4,7 @@
 #include <iomanip>
 #include "lexer.h"
 #include "parser.h"
+#include "intermediateCodeGenerator.h"
 
 void printExprTree(NodeExprP expr) {
 
@@ -108,10 +109,20 @@ int main(int argc, char *argv[]) {
 
     printExprTree(stmt->expr);
 
+    auto generator = new ILGenerator(nullptr, "");
+
+    generator->generateExprIL(stmt->expr);
+
+    for (ThreeAddressStmt *taeP:generator->ilStmts) {
+        printIl(taeP);
+    }
+
+
     //delete expr;
     delete stmt;
     delete parser;
     delete lexer;
+    delete generator;
 
     return 0;
 }

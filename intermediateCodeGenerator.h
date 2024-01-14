@@ -40,17 +40,29 @@ public:
 class ThreeAddressStmt {
 public:
     std::string targetIdent;
-    ThreeAddressExpr expr;
+    ThreeAddressExpr *expr;
 
-    ThreeAddressStmt(std::string targetIdent, const ThreeAddressExpr& expr) {
+    ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
         this->targetIdent = std::move(targetIdent);
         this->expr = expr;
     }
+
+    ~ThreeAddressStmt() {
+        std::cout << "dead";
+        delete expr;
+    }
 };
 
+typedef UniExpr *UniExprP;
+typedef BinaryExpr *BinaryExprP;
+typedef ThreeAddressExpr *ThreeAddressExprP;
+
+void printIl(ThreeAddressStmt *taStmt);
 
 class ILGenerator {
 public:
+    std::vector<ThreeAddressStmt *> ilStmts;
+
     ILGenerator(NodeScopeP program, std::string outfileName) {
         this->program = program;
         this->outfileName= std::move(outfileName);
@@ -61,7 +73,6 @@ public:
     void generateExprIL(NodeExprP expr);
 
 private:
-    std::vector<ThreeAddressStmt> ilStmts;
     NodeScopeP program;
     std::string outfileName;
     int currentTemp = 0;
