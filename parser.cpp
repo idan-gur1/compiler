@@ -145,3 +145,13 @@ NodeAssignmentStmt *Parser::parseStmt() {
 
     return stmt;
 }
+
+NodeScope *Parser::parseScope() {
+    auto scope = new NodeScope();
+
+    while (this->lexer->hasNextToken()) {
+        scope->stmts.push_back(parseStmt());
+    }
+
+    return scope;
+}

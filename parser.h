@@ -11,7 +11,7 @@ public:
     explicit Parser(Lexer *lexer) {
         this->lexer = lexer;
     }
-
+    NodeScope *parseScope();
     NodeAssignmentStmt *parseStmt();
     NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);

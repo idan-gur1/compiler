@@ -7,6 +7,7 @@
 
 #include <string>
 #include <utility>
+#include <sstream>
 #include "lexer.h"
 #include "treeNodes.h"
 
@@ -41,6 +42,7 @@ class ThreeAddressStmt {
 public:
     std::string targetIdent;
     ThreeAddressExpr *expr;
+    bool temp = true;
 
     ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
         this->targetIdent = std::move(targetIdent);
@@ -57,7 +59,7 @@ typedef UniExpr *UniExprP;
 typedef BinaryExpr *BinaryExprP;
 typedef ThreeAddressExpr *ThreeAddressExprP;
 
-void printIl(ThreeAddressStmt *taStmt);
+std::string ilToStr(ThreeAddressStmt *taStmt);
 
 class ILGenerator {
 public:
@@ -69,7 +71,7 @@ public:
     }
 
     void generateProgramIL();
-    void generateStmtIL();
+    void generateStmtIL(NodeAssignmentStmtP stmt);
     void generateExprIL(NodeExprP expr);
 
 private:

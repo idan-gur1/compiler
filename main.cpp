@@ -105,21 +105,22 @@ int main(int argc, char *argv[]) {
 
     //printExprTree(expr);
 
-    auto stmt = parser->parseStmt();
+//    auto stmt = parser->parseStmt();
+    auto scope = parser->parseScope();
 
-    printExprTree(stmt->expr);
+//    printExprTree(stmt->expr);
 
-    auto generator = new ILGenerator(nullptr, "");
+    auto generator = new ILGenerator(scope, "../test.il");
 
-    generator->generateExprIL(stmt->expr);
+//    generator->generateExprIL(stmt->expr);
+    generator->generateProgramIL();
 
     for (ThreeAddressStmt *taeP:generator->ilStmts) {
-        printIl(taeP);
+        std::cout << ilToStr(taeP);
     }
 
 
     //delete expr;
-    delete stmt;
     delete parser;
     delete lexer;
     delete generator;

@@ -87,13 +87,13 @@ Token Lexer::currentAndProceedToken() {
 
 
 std::string getTokenName(TokenType tokenType) {
-    if (tokenType == TokenType::plus) return "plus";
-    if (tokenType == TokenType::minus) return "minus";
-    if (tokenType == TokenType::mult) return "mult";
-    if (tokenType == TokenType::div) return "div";
-    if (tokenType == TokenType::equal) return "equal";
-    if (tokenType == TokenType::openParenthesis) return "openParenthesis";
-    if (tokenType == TokenType::closeParenthesis) return "closeParenthesis";
+    if (tokenType == TokenType::plus) return "+";
+    if (tokenType == TokenType::minus) return "-";
+    if (tokenType == TokenType::mult) return "*";
+    if (tokenType == TokenType::div) return "/";
+    if (tokenType == TokenType::equal) return "=";
+    if (tokenType == TokenType::openParenthesis) return "(";
+    if (tokenType == TokenType::closeParenthesis) return ")";
     if (tokenType == TokenType::immediateInteger) return "immediateInteger";
     if (tokenType == TokenType::identifier) return "identifier";
     if (tokenType == TokenType::exit) return "exit";
