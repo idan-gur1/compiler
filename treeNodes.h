@@ -4,6 +4,7 @@
 #define COMPILER_TREENODES_H
 
 #include <utility>
+#include <unordered_set>
 
 #include "lexer.h"
 
@@ -114,7 +115,7 @@ public:
 class NodeScope {
 public:
     std::vector<NodeAssignmentStmt *> stmts;
-    std::vector<Token> vars;
+    std::unordered_set<std::string> vars;
 
     explicit NodeScope() = default;
 

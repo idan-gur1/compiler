@@ -19,7 +19,7 @@ enum class TokenType {
     immediateInteger,
     identifier,
     tempIdentifier,
-    keyword,
+    intKeyword,
     exit,
     semiColon,
     openCurly,

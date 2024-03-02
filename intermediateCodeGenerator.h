@@ -129,7 +129,15 @@ public:
         this->outfileName= std::move(outfileName);
     }
 
+    ~ILGenerator() {
+        for (int i = 0; i < ilStmts.size(); ++i) {
+            delete ilStmts[i];
+        }
+        delete program;
+    }
+
     void generateProgramIL();
+    void generateScopeIL(NodeScopeP scope);
     void generateStmtIL(NodeAssignmentStmtP stmt);
     void generateExprIL(NodeExprP expr);
 
@@ -137,6 +145,7 @@ private:
     NodeScopeP program;
     std::string outfileName;
     int currentTemp = 0;
+    int maxTemp = 0;
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H

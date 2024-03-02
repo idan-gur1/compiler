@@ -61,6 +61,8 @@ std::vector<Token> Lexer::analyseSource() {
 
             if (buffer == "exit") {
                 this->tokens.push_back(Token(TokenType::exit, buffer));
+            } else if (buffer == "int") {
+                this->tokens.push_back(Token(TokenType::intKeyword, buffer));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }

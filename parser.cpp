@@ -4,6 +4,16 @@
 
 #include "parser.h"
 
+bool Parser::varExists(const std::string& var) {
+    std::stack<NodeScopeP> scopesCopy = this->scopes;
+    while (!scopesCopy.empty()) {
+        if (scopesCopy.top()->vars.contains(var)) return true;
+        scopesCopy.pop();
+    }
+
+    return false;
+}
+
 NodeExpr *Parser::parseFactor() {
     if (!this->lexer->hasNextToken()) {
         std::cout << "Syntax Error: Token expected" << std::endl;
@@ -22,7 +32,8 @@ NodeExpr *Parser::parseFactor() {
     if (currentToken.type == TokenType::immediateInteger) {
         return new NodeImIntTerminal(currentToken);
     } else if (currentToken.type == TokenType::identifier) {
-        if (!this->variables.contains(currentToken.val)) {
+//        if (!this->variables.contains(currentToken.val)) {
+        if (!varExists(currentToken.val)) {
             std::cout << "Compile Error: Undeclared variable " << currentToken.val << std::endl;
             exit(1);
         }
@@ -142,11 +153,13 @@ NodeAssignmentStmt *Parser::tryParseStmt() {
     }
 
     auto stmt = new NodeAssignmentStmt(ident, parseExpr());
-    if (this->variables.contains(ident.val)) {
+//    if (this->variables.contains(ident.val)) {
+    if (this->scopes.top()->vars.contains(ident.val)) {
         std::cout << "Compile Error: Redeclaration of the variable " << ident.val << std::endl;
         exit(1);
     }
-    this->variables.insert(ident.val);
+//    this->variables.insert(ident.val);
+    this->scopes.top()->vars.insert(ident.val);
 
     if (!this->lexer->hasNextToken() ||
         this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
@@ -174,9 +187,13 @@ NodeScope *Parser::parseScope() {
 //    while (this->lexer->hasNextToken()) {
 //        scope->stmts.push_back(tryParseStmt());
 //    }
+    this->scopes.push(scope);
+
     while (auto stmt = tryParseStmt()) {
         scope->stmts.push_back(stmt);
     }
+
+    this->scopes.pop();
 
     if (!this->lexer->hasNextToken() ||
         this->lexer->currentAndProceedToken().type != TokenType::closeCurly) {

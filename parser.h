@@ -4,6 +4,7 @@
 #define COMPILER_PARSER_H
 
 #include <unordered_set>
+#include <stack>
 #include "treeNodes.h"
 #include "lexer.h"
 
@@ -21,8 +22,11 @@ public:
     NodeExpr *parseFactor();
 
 private:
+    bool varExists(const std::string&);
+
     Lexer *lexer;
-    std::unordered_set<std::string> variables;
+//    std::unordered_set<std::string> variables;
+    std::stack<NodeScopeP> scopes;
 };
 
 #endif //COMPILER_PARSER_H

@@ -110,12 +110,12 @@ int main(int argc, char *argv[]) {
 
 //    printExprTree(stmt->expr);
 
-    auto generator = new ILGenerator(scope, "../test.il");
+    auto ilGenerator = new ILGenerator(scope, "../test.il");
 
 //    generator->generateExprIL(stmt->expr);
-    generator->generateProgramIL();
+    ilGenerator->generateProgramIL();
 
-    for (ThreeAddressStmt *taeP:generator->ilStmts) {
+    for (ThreeAddressStmt *taeP:ilGenerator->ilStmts) {
         std::cout << ilStmtToStr(taeP);
     }
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
     //delete expr;
     delete parser;
     delete lexer;
-    delete generator;
+    delete ilGenerator;
 
     return 0;
 }

@@ -74,6 +74,8 @@ void ILGenerator::generateExprIL(NodeExprP expr) {
             this->ilStmts.push_back(new TempAssignmentTAStmt(++currentTemp,
                                                              new BinaryExpr(new UniVal(lhs->val),
                                                                             new UniVal(rhs->val), op)));
+
+            if (currentTemp > maxTemp) maxTemp = currentTemp;
         } else if (lhs) {
 //            generateExprIL(binExpr->right);
 //            int rightTempNum = currentTemp;
@@ -147,10 +149,20 @@ void ILGenerator::generateStmtIL(NodeAssignmentStmtP stmt) {
     this->ilStmts.push_back(tac);
 }
 
-void ILGenerator::generateProgramIL() {
-    for (NodeAssignmentStmtP naStmt: this->program->stmts) {
+void ILGenerator::generateScopeIL(NodeScopeP scope) {
+    for (std::string var : scope->vars) {
+
+    }
+    for (NodeAssignmentStmtP naStmt: scope->stmts) {
         generateStmtIL(naStmt);
     }
+}
+
+void ILGenerator::generateProgramIL() {
+//    for (NodeAssignmentStmtP naStmt: this->program->stmts) {
+//        generateStmtIL(naStmt);
+//    }
+    generateScopeIL(this->program);
 
     std::ofstream outFile(this->outfileName);
 
