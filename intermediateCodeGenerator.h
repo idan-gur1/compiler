@@ -18,48 +18,107 @@ public:
 
 class UniExpr : public ThreeAddressExpr{
 public:
+//    Token val;
+//
+//    explicit UniExpr(Token val) {
+//        this->val = std::move(val);
+//    }
+    ~UniExpr() override = default;
+};
+
+class UniVal : public UniExpr{
+public:
     Token val;
 
-    explicit UniExpr(Token val) {
+    explicit UniVal(Token val) {
         this->val = std::move(val);
+    }
+};
+
+class UniTemp : public UniExpr{
+public:
+    int id;
+
+    explicit UniTemp(int id) {
+        this->id = id;
     }
 };
 
 class BinaryExpr : public ThreeAddressExpr{
 public:
-    Token left;
-    Token right;
+    UniExpr *left;
+    UniExpr *right;
     TokenType op;
 
-    BinaryExpr(Token left, Token right, TokenType op) {
-        this->left = std::move(left);
-        this->right = std::move(right);
+    BinaryExpr(UniExpr *left,UniExpr *right, TokenType op) {
+        this->left = left;
+        this->right = right;
         this->op = op;
+    }
+
+    ~BinaryExpr() override {
+        delete left;
+        delete right;
     }
 };
 
 class ThreeAddressStmt {
 public:
-    std::string targetIdent;
+    /*std::string targetIdent;
     ThreeAddressExpr *expr;
-    bool temp = true;
+    bool temp;
+    int id;
 
     ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
         this->targetIdent = std::move(targetIdent);
         this->expr = expr;
+        this->temp = false;
+        this->id = 0;
     }
 
-    ~ThreeAddressStmt() {
-        std::cout << "dead";
+    explicit ThreeAddressStmt(int tId, ThreeAddressExpr *expr) {
+        this->id = tId;
+        this->expr = expr;
+        this->temp = true;
+        this->targetIdent = "";
+    }*/
+    ThreeAddressExpr *expr;
+
+    explicit ThreeAddressStmt(ThreeAddressExpr *expr) {
+        this->expr = expr;
+    }
+
+    virtual ~ThreeAddressStmt() {
         delete expr;
     }
 };
 
+class TempAssignmentTAStmt : public ThreeAddressStmt {
+public:
+    int id;
+    TempAssignmentTAStmt(int id, ThreeAddressExpr *expr) : ThreeAddressStmt(expr) {
+        this->id = id;
+    }
+};
+
+class VarAssignmentTAStmt : public ThreeAddressStmt {
+public:
+    std::string targetIdent;
+    VarAssignmentTAStmt(std::string targetIdent, ThreeAddressExpr *expr) : ThreeAddressStmt(expr) {
+        this->targetIdent = std::move(targetIdent);
+    }
+};
+
 typedef UniExpr *UniExprP;
+typedef UniTemp *UniTempP;
+typedef UniVal *UniValP;
 typedef BinaryExpr *BinaryExprP;
 typedef ThreeAddressExpr *ThreeAddressExprP;
+typedef ThreeAddressStmt *ThreeAddressStmtP;
+typedef TempAssignmentTAStmt *TempAssignmentTAStmtP;
+typedef VarAssignmentTAStmt *VarAssignmentTAStmtP;
 
-std::string ilToStr(ThreeAddressStmt *taStmt);
+std::string ilStmtToStr(ThreeAddressStmt *taStmt);
 
 class ILGenerator {
 public:

@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
     generator->generateProgramIL();
 
     for (ThreeAddressStmt *taeP:generator->ilStmts) {
-        std::cout << ilToStr(taeP);
+        std::cout << ilStmtToStr(taeP);
     }
 
 

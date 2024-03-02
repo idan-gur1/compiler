@@ -114,6 +114,7 @@ public:
 class NodeScope {
 public:
     std::vector<NodeAssignmentStmt *> stmts;
+    std::vector<Token> vars;
 
     explicit NodeScope() = default;
 

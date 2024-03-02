@@ -22,6 +22,10 @@ NodeExpr *Parser::parseFactor() {
     if (currentToken.type == TokenType::immediateInteger) {
         return new NodeImIntTerminal(currentToken);
     } else if (currentToken.type == TokenType::identifier) {
+        if (!this->variables.contains(currentToken.val)) {
+            std::cout << "Compile Error: Undeclared variable " << currentToken.val << std::endl;
+            exit(1);
+        }
         return new NodeIdentTerminal(currentToken);
     }
 
@@ -108,18 +112,24 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     return parseExpr(leftExpr, op.type);
 }
 
-NodeAssignmentStmt *Parser::parseStmt() {
+NodeAssignmentStmt *Parser::tryParseStmt() {
+//    if (!this->lexer->hasNextToken()) {
+//        std::cout << "Syntax Error: Token expected" << std::endl;
+//        exit(1);
+//    }
     if (!this->lexer->hasNextToken()) {
-        std::cout << "Syntax Error: Token expected" << std::endl;
-        exit(1);
+        return nullptr;
     }
 
-    Token ident = this->lexer->currentAndProceedToken();
+    Token ident = this->lexer->currentToken();
 
     if (ident.type != TokenType::identifier) {
-        std::cout << "Syntax Error: L-type expression expected; identifier." << std::endl;
-        exit(1);
+        return nullptr;
+//        std::cout << "Syntax Error: L-type expression expected; identifier." << std::endl;
+//        exit(1);
     }
+
+    this->lexer->currentAndProceedToken();
 
     if (!this->lexer->hasNextToken()) {
         std::cout << "Syntax Error: = expected" << std::endl;
@@ -132,16 +142,22 @@ NodeAssignmentStmt *Parser::parseStmt() {
     }
 
     auto stmt = new NodeAssignmentStmt(ident, parseExpr());
+    if (this->variables.contains(ident.val)) {
+        std::cout << "Compile Error: Redeclaration of the variable " << ident.val << std::endl;
+        exit(1);
+    }
+    this->variables.insert(ident.val);
 
-    if (!this->lexer->hasNextToken()) {
+    if (!this->lexer->hasNextToken() ||
+        this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
         std::cout << "Syntax Error: ; expected" << std::endl;
         exit(1);
     }
 
-    if (this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
-        std::cout << "Syntax Error: Unexpected token" << std::endl;
-        exit(1);
-    }
+//    if (this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
+//        std::cout << "Syntax Error: Unexpected token" << std::endl;
+//        exit(1);
+//    }
 
     return stmt;
 }
@@ -149,8 +165,23 @@ NodeAssignmentStmt *Parser::parseStmt() {
 NodeScope *Parser::parseScope() {
     auto scope = new NodeScope();
 
-    while (this->lexer->hasNextToken()) {
-        scope->stmts.push_back(parseStmt());
+    if (!this->lexer->hasNextToken() ||
+        this->lexer->currentAndProceedToken().type != TokenType::openCurly) {
+        std::cout << "Syntax Error: { expected" << std::endl;
+        exit(1);
+    }
+
+//    while (this->lexer->hasNextToken()) {
+//        scope->stmts.push_back(tryParseStmt());
+//    }
+    while (auto stmt = tryParseStmt()) {
+        scope->stmts.push_back(stmt);
+    }
+
+    if (!this->lexer->hasNextToken() ||
+        this->lexer->currentAndProceedToken().type != TokenType::closeCurly) {
+        std::cout << "Syntax Error: } expected" << std::endl;
+        exit(1);
     }
 
     return scope;

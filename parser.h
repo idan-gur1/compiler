@@ -3,6 +3,7 @@
 #ifndef COMPILER_PARSER_H
 #define COMPILER_PARSER_H
 
+#include <unordered_set>
 #include "treeNodes.h"
 #include "lexer.h"
 
@@ -12,7 +13,7 @@ public:
         this->lexer = lexer;
     }
     NodeScope *parseScope();
-    NodeAssignmentStmt *parseStmt();
+    NodeAssignmentStmt *tryParseStmt();
     NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
@@ -21,6 +22,7 @@ public:
 
 private:
     Lexer *lexer;
+    std::unordered_set<std::string> variables;
 };
 
 #endif //COMPILER_PARSER_H

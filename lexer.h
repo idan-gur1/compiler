@@ -18,9 +18,12 @@ enum class TokenType {
     closeParenthesis,
     immediateInteger,
     identifier,
+    tempIdentifier,
     keyword,
     exit,
-    semiColon
+    semiColon,
+    openCurly,
+    closeCurly
 };
 
 std::string getTokenName(TokenType tokenType);

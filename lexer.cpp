@@ -40,7 +40,11 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::openParenthesis));
         } else if (cCur == ')') {
             this->tokens.push_back(Token(TokenType::closeParenthesis));
-        } else if (std::isdigit(cCur)) {
+        } else if (cCur == '{') {
+            this->tokens.push_back(Token(TokenType::openCurly));
+        } else if (cCur == '}') {
+            this->tokens.push_back(Token(TokenType::closeCurly));
+        }else if (std::isdigit(cCur)) {
             std::string buffer(1, cCur);
 
             while (this->hasBuffer() && std::isdigit(this->current())) {
@@ -94,6 +98,8 @@ std::string getTokenName(TokenType tokenType) {
     if (tokenType == TokenType::equal) return "=";
     if (tokenType == TokenType::openParenthesis) return "(";
     if (tokenType == TokenType::closeParenthesis) return ")";
+    if (tokenType == TokenType::openCurly) return "{";
+    if (tokenType == TokenType::closeCurly) return "}";
     if (tokenType == TokenType::immediateInteger) return "immediateInteger";
     if (tokenType == TokenType::identifier) return "identifier";
     if (tokenType == TokenType::exit) return "exit";

@@ -10,4 +10,6 @@ add_executable(compiler main.cpp
         parser.h
         treeNodes.h
         intermediateCodeGenerator.cpp
-        intermediateCodeGenerator.h)
+        intermediateCodeGenerator.h
+        generation.cpp
+        generation.h)
