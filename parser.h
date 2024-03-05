@@ -14,7 +14,7 @@ public:
         this->lexer = lexer;
     }
     NodeScope *parseScope();
-    NodeAssignmentStmt *tryParseStmt();
+    NodeStmt *tryParseStmt();
     NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,

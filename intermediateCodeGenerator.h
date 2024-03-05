@@ -123,6 +123,8 @@ std::string ilStmtToStr(ThreeAddressStmt *taStmt);
 class ILGenerator {
 public:
     std::vector<ThreeAddressStmt *> ilStmts;
+    int maxTemp = 0;
+    int declarations = 0;
 
     ILGenerator(NodeScopeP program, std::string outfileName) {
         this->program = program;
@@ -138,14 +140,13 @@ public:
 
     void generateProgramIL();
     void generateScopeIL(NodeScopeP scope);
-    void generateStmtIL(NodeAssignmentStmtP stmt);
+    void generateStmtIL(NodeStmtP stmt);
     void generateExprIL(NodeExprP expr);
 
 private:
     NodeScopeP program;
     std::string outfileName;
     int currentTemp = 0;
-    int maxTemp = 0;
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H

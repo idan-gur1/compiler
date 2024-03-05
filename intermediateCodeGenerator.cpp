@@ -75,7 +75,7 @@ void ILGenerator::generateExprIL(NodeExprP expr) {
                                                              new BinaryExpr(new UniVal(lhs->val),
                                                                             new UniVal(rhs->val), op)));
 
-            if (currentTemp > maxTemp) maxTemp = currentTemp;
+            if (currentTemp > this->maxTemp) this->maxTemp = currentTemp;
         } else if (lhs) {
 //            generateExprIL(binExpr->right);
 //            int rightTempNum = currentTemp;
@@ -132,28 +132,32 @@ void ILGenerator::generateExprIL(NodeExprP expr) {
     }
 }
 
-void ILGenerator::generateStmtIL(NodeAssignmentStmtP stmt) {
-    this->currentTemp = 0;
-    this->generateExprIL(stmt->expr);
+void ILGenerator::generateStmtIL(NodeStmtP stmt) {
+    if (auto assignmentStmt = dynamic_cast<NodeAssignmentStmtP>(stmt)) {
+        this->currentTemp = 0;
+        this->generateExprIL(assignmentStmt->expr);
 //    auto tac = new ThreeAddressStmt(stmt->ident.val,
 //                                    new UniExpr(Token(TokenType::tempIdentifier,
 //                                                      "t" + std::to_string(currentTemp))));
-    VarAssignmentTAStmt *tac = nullptr;
-    if (auto terminalExpr = dynamic_cast<TerminalNodeExprP>(stmt->expr)) {
-        tac = new VarAssignmentTAStmt(stmt->ident.val, new UniVal(terminalExpr->val));
-    } else {
-        tac = new VarAssignmentTAStmt(stmt->ident.val, new UniTemp(currentTemp));
+        VarAssignmentTAStmt *tac = nullptr;
+        this->declarations++;
+
+        if (auto terminalExpr = dynamic_cast<TerminalNodeExprP>(assignmentStmt->expr)) {
+            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniVal(terminalExpr->val));
+        } else {
+            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniTemp(currentTemp));
+        }
+
+        this->ilStmts.push_back(tac);
     }
 
-//    tac->temp = false;
-    this->ilStmts.push_back(tac);
 }
 
 void ILGenerator::generateScopeIL(NodeScopeP scope) {
     for (std::string var : scope->vars) {
 
     }
-    for (NodeAssignmentStmtP naStmt: scope->stmts) {
+    for (NodeStmtP naStmt: scope->stmts) {
         generateStmtIL(naStmt);
     }
 }

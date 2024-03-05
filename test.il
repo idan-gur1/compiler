@@ -1,6 +1,6 @@
 temp1 := 2 * 3
 temp1 := 1 + temp1
-temp2 := 5 + 6
+temp2 := 5 + 7
 temp2 := 4 * temp2
 temp1 := temp1 + temp2
 x = temp1

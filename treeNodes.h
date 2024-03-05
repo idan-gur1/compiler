@@ -96,7 +96,12 @@ public:
 //endregion
 
 //region Statement nodes
-class NodeAssignmentStmt {
+class NodeStmt {
+public:
+    virtual ~NodeStmt() = default;
+};
+
+class NodeAssignmentStmt : public NodeStmt{
 public:
     Token ident;
     NodeExpr *expr;
@@ -106,7 +111,7 @@ public:
         this->expr = expr;
     }
 
-    ~NodeAssignmentStmt() {
+    ~NodeAssignmentStmt() override {
         delete expr;
     }
 };
@@ -114,7 +119,7 @@ public:
 
 class NodeScope {
 public:
-    std::vector<NodeAssignmentStmt *> stmts;
+    std::vector<NodeStmt *> stmts;
     std::unordered_set<std::string> vars;
 
     explicit NodeScope() = default;
@@ -127,6 +132,7 @@ public:
 };
 
 typedef NodeScope *NodeScopeP;
+typedef NodeStmt *NodeStmtP;
 typedef NodeAssignmentStmt *NodeAssignmentStmtP;
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
