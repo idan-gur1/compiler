@@ -22,7 +22,10 @@ public:
     NodeExpr *parseFactor();
 
 private:
-    bool varExists(const std::string&);
+    bool varExistsCurrentScope(const std::string&);
+    bool varExistsScopeStack(const std::string&);
+    void addVarToCurrentScope(const std::string&);
+    bool stmtDelimiterExists();
 
     Lexer *lexer;
 //    std::unordered_set<std::string> variables;
