@@ -8,6 +8,31 @@
 
 #include "lexer.h"
 
+enum class VariableType {
+    intType,
+    intPtrType,
+    charType,
+    charPtrType,
+};
+
+class Variable {
+public:
+    std::string name;
+    VariableType type;
+    int arrSize;
+
+    Variable(std::string name, VariableType type, int arrSize=0) {
+        this->name = std::move(name);
+        this->type = type;
+        this->arrSize = arrSize;
+    }
+
+    bool operator == (const Variable& Ref) const
+    {
+        return (this->name == Ref.name) && (this->type == Ref.type) && (this->arrSize == Ref.arrSize);
+    }
+};
+
 //region Expression nodes
 class NodeExpr {
 public:
@@ -101,17 +126,58 @@ public:
     virtual ~NodeStmt() = default;
 };
 
-class NodeAssignmentStmt : public NodeStmt{
+//class NodeAssignmentStmt : public NodeStmt{
+//public:
+//    Token ident;
+//    NodeExpr *expr;
+//
+//    NodeAssignmentStmt(Token ident, NodeExpr *expr) {
+//        this->ident = std::move(ident);
+//        this->expr = expr;
+//    }
+//
+//    ~NodeAssignmentStmt() override {
+//        delete expr;
+//    }
+//    ~NodeAssignmentStmt() override = default;
+//};
+class NodePrimitiveAssignmentStmt : public NodeStmt {
 public:
-    Token ident;
+    Variable variable;
     NodeExpr *expr;
 
-    NodeAssignmentStmt(Token ident, NodeExpr *expr) {
-        this->ident = std::move(ident);
+    NodePrimitiveAssignmentStmt(Variable var, NodeExpr *expr) : variable(std::move(var)) {
+//        this->variable = std::move(variable);
         this->expr = expr;
     }
 
-    ~NodeAssignmentStmt() override {
+    ~NodePrimitiveAssignmentStmt() override {
+        delete expr;
+    }
+};
+class NodePointerAssignmentStmt : public NodeStmt {
+public:
+    Variable pointer;
+    Variable variable;
+
+    NodePointerAssignmentStmt(Variable ptr, Variable var) : pointer(std::move(ptr)), variable(std::move(var)) {
+    }
+
+    ~NodePointerAssignmentStmt() override = default;
+};
+class NodeArrayAssignmentStmt : public NodeStmt {
+public:
+    Variable array;
+    NodeExpr *index;
+    NodeExpr *expr;
+
+    NodeArrayAssignmentStmt(Variable arr, NodeExpr *index, NodeExpr *expr) : array(std::move(arr)) {
+        this->index = index;
+        this->expr = expr;
+    }
+
+    ~NodeArrayAssignmentStmt() override {
+        delete index;
         delete expr;
     }
 };
@@ -120,7 +186,7 @@ public:
 class NodeScope {
 public:
     std::vector<NodeStmt *> stmts;
-    std::unordered_set<std::string> vars;
+    std::vector<Variable> vars;
 
     explicit NodeScope() = default;
 
@@ -133,7 +199,10 @@ public:
 
 typedef NodeScope *NodeScopeP;
 typedef NodeStmt *NodeStmtP;
-typedef NodeAssignmentStmt *NodeAssignmentStmtP;
+//typedef NodeAssignmentStmt *NodeAssignmentStmtP;
+typedef NodePrimitiveAssignmentStmt *NodePrimitiveAssignmentStmtP;
+typedef NodePointerAssignmentStmt *NodePointerAssignmentStmtP;
+typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
 typedef ParenthesisNodeExpr *ParenthesisNodeExprP;

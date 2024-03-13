@@ -5,6 +5,7 @@
 
 #include <unordered_set>
 #include <stack>
+#include <optional>
 #include "treeNodes.h"
 #include "lexer.h"
 
@@ -22,10 +23,12 @@ public:
     NodeExpr *parseFactor();
 
 private:
-    bool varExistsCurrentScope(const std::string&);
-    bool varExistsScopeStack(const std::string&);
-    void addVarToCurrentScope(const std::string&);
+//    bool varExistsCurrentScope(const std::string&);
+    std::optional<Variable> varExistsCurrentScope(const std::string&);
+    std::optional<Variable> varExistsScopeStack(const std::string&);
+    void addVarToCurrentScope(const Variable&);
     bool stmtDelimiterExists();
+    static void throwError(const std::string& errorMsg);
 
     Lexer *lexer;
 //    std::unordered_set<std::string> variables;

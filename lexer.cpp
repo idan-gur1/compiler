@@ -63,6 +63,12 @@ std::vector<Token> Lexer::analyseSource() {
                 this->tokens.push_back(Token(TokenType::exit, buffer));
             } else if (buffer == "int") {
                 this->tokens.push_back(Token(TokenType::intKeyword, buffer));
+            } else if (buffer == "char") {
+                this->tokens.push_back(Token(TokenType::charKeyword, buffer));
+            } else if (buffer == "[") {
+                this->tokens.push_back(Token(TokenType::openSquare, buffer));
+            } else if (buffer == "]") {
+                this->tokens.push_back(Token(TokenType::closeSquare, buffer));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }
@@ -71,7 +77,7 @@ std::vector<Token> Lexer::analyseSource() {
         } else if (std::isspace(cCur)) {
             // ignore
         } else {
-            std::cout << "Unknown character/token " << cCur << " ." << std::endl;
+            std::cout << "Lexer Error: Unknown character/token " << cCur << " ." << std::endl;
             std::exit(1);
         }
     }
@@ -83,8 +89,8 @@ bool Lexer::hasNextToken(int offset) {
     return nTokenIndex + offset < tokens.size();
 }
 
-Token Lexer::currentToken() {
-    return this->tokens[nTokenIndex];
+Token Lexer::currentToken(int offset) {
+    return this->tokens[nTokenIndex + offset];
 }
 
 Token Lexer::currentAndProceedToken() {

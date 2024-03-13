@@ -20,10 +20,13 @@ enum class TokenType {
     identifier,
     tempIdentifier,
     intKeyword,
+    charKeyword,
     exit,
     semiColon,
     openCurly,
-    closeCurly
+    closeCurly,
+    openSquare,
+    closeSquare
 };
 
 std::string getTokenName(TokenType tokenType);
@@ -43,7 +46,7 @@ public:
 
     std::vector<Token> analyseSource();
     bool hasNextToken(int offset = 0);
-    Token currentToken();
+    Token currentToken(int offset = 0);
     Token currentAndProceedToken();
 
 private:

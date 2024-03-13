@@ -4,22 +4,36 @@
 
 #include "parser.h"
 
-bool Parser::varExistsScopeStack(const std::string &var) {
+std::optional<Variable> Parser::varExistsScopeStack(const std::string &varName) {
     std::stack<NodeScopeP> scopesCopy = this->scopes;
     while (!scopesCopy.empty()) {
-        if (scopesCopy.top()->vars.contains(var)) return true;
+        auto it = std::find_if(scopesCopy.top()->vars.begin(), scopesCopy.top()->vars.end(),
+                               [&](const Variable &v) { return v.name == varName; });
+
+        if (it != scopesCopy.top()->vars.end()) {
+            return scopesCopy.top()->vars[it - scopesCopy.top()->vars.begin()];
+        }
+
         scopesCopy.pop();
     }
 
-    return false;
+    return {};
 }
 
-bool Parser::varExistsCurrentScope(const std::string &var) {
-    return this->scopes.top()->vars.contains(var);
+std::optional<Variable> Parser::varExistsCurrentScope(const std::string &varName) {
+//    return this->scopes.top()->vars.contains(var);
+    auto it = std::find_if(this->scopes.top()->vars.begin(), this->scopes.top()->vars.end(),
+                           [&](const Variable &v) { return v.name == varName; });
+
+    if (it != this->scopes.top()->vars.end()) {
+        return this->scopes.top()->vars[it - this->scopes.top()->vars.begin()];
+    }
+    return {};
 }
 
-void Parser::addVarToCurrentScope(const std::string& var) {
-    this->scopes.top()->vars.insert(var);
+void Parser::addVarToCurrentScope(const Variable &var) {
+//    this->scopes.top()->vars.insert(var);
+    this->scopes.top()->vars.push_back(var);
 }
 
 bool Parser::stmtDelimiterExists() {
@@ -146,87 +160,35 @@ NodeStmt *Parser::tryParseStmt() {
 
     if (firstToken.type == TokenType::identifier) {
         this->lexer->currentAndProceedToken();
+        if (auto var = this->varExistsScopeStack(firstToken.val)) {
+            if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
+                this->lexer->currentAndProceedToken();
 
-        if (this->lexer->hasNextToken()) {
-            Token nextToken = this->lexer->currentToken();
+            } else if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::openSquare) {
+                this->lexer->currentAndProceedToken();
 
-            if (nextToken.type == TokenType::equal) {
-                if (!varExistsScopeStack(firstToken.val)) {
-                    std::cout << "Compile Error: Use of undeclared identifier " << firstToken.val << std::endl;
-                    exit(1);
+                NodeExprP indexExpr = this->parseExpr();
+
+                if (!this->lexer->hasNextToken() || this->lexer->currentAndProceedToken().type != TokenType::closeSquare) {
+                    Parser::throwError("[Syntax Error] ']' expected");
                 }
 
-                stmt = new NodeAssignmentStmt(firstToken, parseExpr());
-
-                if (!stmtDelimiterExists()) {
-                    std::cout << "Syntax Error: ; expected" << std::endl;
-                    exit(1);
+                if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
+                    this->lexer->currentAndProceedToken();
+                    stmt = new NodeArrayAssignmentStmt(var.value(), indexExpr, parseExpr());
                 }
             }
+        } else {
+            Parser::throwError("Use of undeclared identifier " + firstToken.val);
         }
 
     } else if (firstToken.type == TokenType::intKeyword) {
-        this->lexer->currentAndProceedToken();
 
-        if (!this->lexer->hasNextToken() || this->lexer->currentToken().type != TokenType::identifier) {
-            std::cout << "Syntax Error: Identifier expected" << std::endl;
-            exit(1);
-        }
-
-        Token ident = this->lexer->currentAndProceedToken();
-
-        if (varExistsCurrentScope(ident.val)) {
-            std::cout << "Compile Error: redeclaration of identifier " << ident.val << std::endl;
-            exit(1);
-        }
-
-        this->addVarToCurrentScope(ident.val);
-
-        if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
-            this->lexer->currentAndProceedToken();
-            stmt = new NodeAssignmentStmt(ident, parseExpr());
-        }
-
-        if (!stmtDelimiterExists()) {
-            std::cout << "Syntax Error: ; expected" << std::endl;
-            exit(1);
-        }
     }
-    // TODO continue here
-    // from here - old code
 
-//    Token ident = this->lexer->currentToken();
-//
-//    if (ident.type != TokenType::identifier) {
-//        return nullptr;
-//    }
-//
-//    this->lexer->currentAndProceedToken();
-//
-//    if (!this->lexer->hasNextToken()) {
-//        std::cout << "Syntax Error: = expected" << std::endl;
-//        exit(1);
-//    }
-//
-//    if (this->lexer->currentAndProceedToken().type != TokenType::equal) {
-//        std::cout << "Syntax Error: Unexpected token" << std::endl;
-//        exit(1);
-//    }
-//
-//    auto stmt = new NodeAssignmentStmt(ident, parseExpr());
-//
-//    if (this->scopes.top()->vars.contains(ident.val)) {
-//        std::cout << "Compile Error: Redeclaration of the variable " << ident.val << std::endl;
-//        exit(1);
-//    }
-//
-//    this->scopes.top()->vars.insert(ident.val);
-//
-//    if (!this->lexer->hasNextToken() ||
-//        this->lexer->currentAndProceedToken().type != TokenType::semiColon) {
-//        std::cout << "Syntax Error: ; expected" << std::endl;
-//        exit(1);
-//    }
+    if (!this->stmtDelimiterExists()) {
+        Parser::throwError("[Syntax Error] ';' expected");
+    }
 
     return stmt;
 }
@@ -258,4 +220,9 @@ NodeScope *Parser::parseScope() {
     }
 
     return scope;
+}
+
+void Parser::throwError(const std::string &errorMsg) {
+    std::cout << "Parser Error: " << errorMsg << std::endl;
+    exit(1);
 }
