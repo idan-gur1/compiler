@@ -26,7 +26,8 @@ enum class TokenType {
     openCurly,
     closeCurly,
     openSquare,
-    closeSquare
+    closeSquare,
+    ampersand
 };
 
 std::string getTokenName(TokenType tokenType);

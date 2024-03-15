@@ -21,14 +21,13 @@ public:
     VariableType type;
     int arrSize;
 
-    Variable(std::string name, VariableType type, int arrSize=0) {
+    Variable(std::string name, VariableType type, int arrSize = 0) {
         this->name = std::move(name);
         this->type = type;
         this->arrSize = arrSize;
     }
 
-    bool operator == (const Variable& Ref) const
-    {
+    bool operator==(const Variable &Ref) const {
         return (this->name == Ref.name) && (this->type == Ref.type) && (this->arrSize == Ref.arrSize);
     }
 };
@@ -155,16 +154,30 @@ public:
         delete expr;
     }
 };
-class NodePointerAssignmentStmt : public NodeStmt {
+
+class NodePointerAddrAssignmentStmt : public NodeStmt {
 public:
     Variable pointer;
     Variable variable;
 
-    NodePointerAssignmentStmt(Variable ptr, Variable var) : pointer(std::move(ptr)), variable(std::move(var)) {
+    NodePointerAddrAssignmentStmt(Variable ptr, Variable var) : pointer(std::move(ptr)), variable(std::move(var)) {
     }
 
-    ~NodePointerAssignmentStmt() override = default;
+    ~NodePointerAddrAssignmentStmt() override = default;
 };
+
+class NodePointerValueAssignmentStmt : public NodeStmt {
+public:
+    Variable pointer;
+    NodeExpr *expr;
+
+    NodePointerValueAssignmentStmt(Variable ptr, NodeExpr *expr) : pointer(std::move(ptr)) {
+        this->expr = expr;
+    }
+
+    ~NodePointerValueAssignmentStmt() override = default;
+};
+
 class NodeArrayAssignmentStmt : public NodeStmt {
 public:
     Variable array;
@@ -191,8 +204,8 @@ public:
     explicit NodeScope() = default;
 
     ~NodeScope() {
-        for (int i = 0; i < stmts.size(); ++i) {
-            delete stmts[i];
+        for (auto &stmt: stmts) {
+            delete stmt;
         }
     }
 };
@@ -201,7 +214,8 @@ typedef NodeScope *NodeScopeP;
 typedef NodeStmt *NodeStmtP;
 //typedef NodeAssignmentStmt *NodeAssignmentStmtP;
 typedef NodePrimitiveAssignmentStmt *NodePrimitiveAssignmentStmtP;
-typedef NodePointerAssignmentStmt *NodePointerAssignmentStmtP;
+typedef NodePointerAddrAssignmentStmt *NodePointerAddrAssignmentStmtP;
+typedef NodePointerValueAssignmentStmt *NodePointerValueAssignmentStmtP;
 typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;

@@ -44,7 +44,13 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::openCurly));
         } else if (cCur == '}') {
             this->tokens.push_back(Token(TokenType::closeCurly));
-        }else if (std::isdigit(cCur)) {
+        } else if (cCur == '[') {
+            this->tokens.push_back(Token(TokenType::openSquare));
+        } else if (cCur == ']') {
+            this->tokens.push_back(Token(TokenType::closeSquare));
+        } else if (cCur == '&') {
+            this->tokens.push_back(Token(TokenType::ampersand));
+        } else if (std::isdigit(cCur)) {
             std::string buffer(1, cCur);
 
             while (this->hasBuffer() && std::isdigit(this->current())) {
@@ -65,10 +71,6 @@ std::vector<Token> Lexer::analyseSource() {
                 this->tokens.push_back(Token(TokenType::intKeyword, buffer));
             } else if (buffer == "char") {
                 this->tokens.push_back(Token(TokenType::charKeyword, buffer));
-            } else if (buffer == "[") {
-                this->tokens.push_back(Token(TokenType::openSquare, buffer));
-            } else if (buffer == "]") {
-                this->tokens.push_back(Token(TokenType::closeSquare, buffer));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }

@@ -15,7 +15,7 @@ public:
         this->lexer = lexer;
     }
     NodeScope *parseScope();
-    NodeStmt *tryParseStmt();
+    std::tuple<NodeStmt *, bool> tryParseStmt();
     NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
@@ -29,6 +29,12 @@ private:
     void addVarToCurrentScope(const Variable&);
     bool stmtDelimiterExists();
     static void throwError(const std::string& errorMsg);
+
+    NodeStmt *stmtByIdentifier(const Token& ident);
+    NodeStmt *stmtPrimitiveAssignment(Variable var);
+    NodeStmt *stmtArrayAssignment(Variable var);
+
+    NodeStmt *stmtVariableDeclaration(VariableType type);
 
     Lexer *lexer;
 //    std::unordered_set<std::string> variables;

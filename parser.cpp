@@ -149,9 +149,9 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     return parseExpr(leftExpr, op.type);
 }
 
-NodeStmt *Parser::tryParseStmt() {
+std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
     if (!this->lexer->hasNextToken()) {
-        return nullptr;
+        return {nullptr, false};
     }
 
     NodeStmt *stmt = nullptr;
@@ -159,38 +159,62 @@ NodeStmt *Parser::tryParseStmt() {
     Token firstToken = this->lexer->currentToken();
 
     if (firstToken.type == TokenType::identifier) {
-        this->lexer->currentAndProceedToken();
-        if (auto var = this->varExistsScopeStack(firstToken.val)) {
-            if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
-                this->lexer->currentAndProceedToken();
+        /*this->lexer->currentAndProceedToken();
 
-            } else if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::openSquare) {
-                this->lexer->currentAndProceedToken();
+        std::optional<Variable> var = this->varExistsScopeStack(firstToken.val);
 
-                NodeExprP indexExpr = this->parseExpr();
-
-                if (!this->lexer->hasNextToken() || this->lexer->currentAndProceedToken().type != TokenType::closeSquare) {
-                    Parser::throwError("[Syntax Error] ']' expected");
-                }
-
-                if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
-                    this->lexer->currentAndProceedToken();
-                    stmt = new NodeArrayAssignmentStmt(var.value(), indexExpr, parseExpr());
-                }
-            }
-        } else {
+        if (!var.has_value()) {
             Parser::throwError("Use of undeclared identifier " + firstToken.val);
         }
 
-    } else if (firstToken.type == TokenType::intKeyword) {
+        if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
+            this->lexer->currentAndProceedToken();
+            if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::ampersand) {
+                this->lexer->currentAndProceedToken();
+                if (!this->lexer->hasNextToken() || this->lexer->currentToken().type != TokenType::identifier) {
+                    Parser::throwError("[Syntax Error] ']' identifier expected");
+                }
+                std::optional<Variable> targetVar = this->varExistsScopeStack(this->lexer->currentAndProceedToken().val);
 
+                if (!targetVar.has_value()) {
+                    Parser::throwError("Use of undeclared identifier " + targetVar->name);
+                }
+                stmt = new NodePointerAddrAssignmentStmt(var.value(), targetVar.value());
+            } else {
+                stmt = new NodePrimitiveAssignmentStmt(var.value(), this->parseExpr());
+            }
+            stmt = this->stmtPrimitiveAssignment(var.value());
+        } else if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::openSquare) {
+            this->lexer->currentAndProceedToken();
+
+            NodeExprP indexExpr = this->parseExpr();
+
+            if (!this->lexer->hasNextToken() || this->lexer->currentAndProceedToken().type != TokenType::closeSquare) {
+                Parser::throwError("[Syntax Error] ']' expected");
+            }
+
+            if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::equal) {
+                this->lexer->currentAndProceedToken();
+                stmt = new NodeArrayAssignmentStmt(var.value(), indexExpr, this->parseExpr());
+            } else {
+                delete indexExpr;
+            }
+            stmt = this->stmtArrayAssignment(var.value());
+        }*/
+        stmt = this->stmtByIdentifier(this->lexer->currentAndProceedToken());
+
+    } else if (firstToken.type == TokenType::intKeyword) {
+        stmt = stmtVariableDeclaration(VariableType::intType);
+        if (stmt == nullptr) {
+            return {nullptr, true};
+        }
     }
 
     if (!this->stmtDelimiterExists()) {
         Parser::throwError("[Syntax Error] ';' expected");
     }
 
-    return stmt;
+    return {stmt, false};
 }
 
 NodeScope *Parser::parseScope() {
@@ -207,8 +231,14 @@ NodeScope *Parser::parseScope() {
 //    }
     this->scopes.push(scope);
 
-    while (auto stmt = tryParseStmt()) {
+    /*while (auto stmt = tryParseStmt()) {
         scope->stmts.push_back(stmt);
+    }*/
+    std::tuple<NodeStmt *, bool> stmtTuple = this->tryParseStmt();
+
+    while (get<0>(stmtTuple) || get<1>(stmtTuple)) {
+        scope->stmts.push_back(get<0>(stmtTuple));
+        stmtTuple = this->tryParseStmt();
     }
 
     this->scopes.pop();
@@ -226,3 +256,4 @@ void Parser::throwError(const std::string &errorMsg) {
     std::cout << "Parser Error: " << errorMsg << std::endl;
     exit(1);
 }
+
