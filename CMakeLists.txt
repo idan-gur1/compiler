@@ -13,4 +13,5 @@ add_executable(compiler main.cpp
         intermediateCodeGenerator.h
         generation.cpp
         generation.h
-        parserStatements.cpp)
+        parserStatements.cpp
+        parserExpressions.cpp)

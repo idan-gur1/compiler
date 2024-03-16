@@ -10,25 +10,25 @@
 
 enum class VariableType {
     intType,
-    intPtrType,
     charType,
-    charPtrType,
 };
 
 class Variable {
 public:
     std::string name;
     VariableType type;
+    bool ptrType;
     int arrSize;
 
-    Variable(std::string name, VariableType type, int arrSize = 0) {
+    Variable(std::string name, VariableType type, bool ptrType, int arrSize = 0) {
         this->name = std::move(name);
         this->type = type;
+        this->ptrType = ptrType;
         this->arrSize = arrSize;
     }
 
     bool operator==(const Variable &Ref) const {
-        return (this->name == Ref.name) && (this->type == Ref.type) && (this->arrSize == Ref.arrSize);
+        return (this->name == Ref.name) && (this->type == Ref.type) && (this->ptrType == Ref.ptrType) && (this->arrSize == Ref.arrSize);
     }
 };
 
@@ -56,11 +56,12 @@ public:
 
 class TerminalNodeExpr : public NodeExpr {
 public:
-    Token val;
+    /*Token val;
 
     explicit TerminalNodeExpr(Token t) {
         this->val = std::move(t);
-    }
+    }*/
+    ~TerminalNodeExpr() override = default;
 };
 
 class ParenthesisNodeExpr : public NodeExpr {
@@ -106,15 +107,33 @@ public:
 
 class NodeImIntTerminal : public TerminalNodeExpr {
 public:
-
-    explicit NodeImIntTerminal(Token t) : TerminalNodeExpr(std::move(t)) {
+    std::string value;
+    explicit NodeImIntTerminal(const Token& t) : value(t.val) {
     }
 };
 
-class NodeIdentTerminal : public TerminalNodeExpr {
+/*class NodeIdentTerminal : public TerminalNodeExpr {
 public:
 
     explicit NodeIdentTerminal(Token t) : TerminalNodeExpr(std::move(t)) {
+    }
+};*/
+class NodeVariableTerminal : public TerminalNodeExpr {
+public:
+    Variable variable;
+    explicit NodeVariableTerminal(Variable var) : variable(std::move(var)) {
+    }
+};
+
+class NodeSubscriptableVariableTerminal : public NodeVariableTerminal {
+public:
+    NodeExpr *index;
+    NodeSubscriptableVariableTerminal(Variable var, NodeExpr *index) : NodeVariableTerminal(std::move(var)) {
+        this->index = index;
+    }
+
+    ~NodeSubscriptableVariableTerminal() override {
+        delete index;
     }
 };
 //endregion
@@ -175,7 +194,9 @@ public:
         this->expr = expr;
     }
 
-    ~NodePointerValueAssignmentStmt() override = default;
+    ~NodePointerValueAssignmentStmt() override {
+        delete expr;
+    };
 };
 
 class NodeArrayAssignmentStmt : public NodeStmt {
@@ -226,6 +247,7 @@ typedef NodeSubExpr *NodeSubExprP;
 typedef NodeMultExpr *NodeMultExprP;
 typedef NodeDivExpr *NodeDivExprP;
 typedef NodeImIntTerminal *NodeImIntTerminalP;
-typedef NodeIdentTerminal *NodeIdentTerminalP;
+typedef NodeVariableTerminal *NodeVariableTerminalP;
+typedef NodeSubscriptableVariableTerminal *NodeSubscriptableVariableTerminalP;
 
 #endif //COMPILER_TREENODES_H
