@@ -2,6 +2,7 @@
 // Created by idang on 24/12/2023.
 //
 
+/*
 #ifndef COMPILER_INTERMEDIATECODEGENERATOR_H
 #define COMPILER_INTERMEDIATECODEGENERATOR_H
 
@@ -64,24 +65,24 @@ public:
 
 class ThreeAddressStmt {
 public:
-    /*std::string targetIdent;
-    ThreeAddressExpr *expr;
-    bool temp;
-    int id;
-
-    ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
-        this->targetIdent = std::move(targetIdent);
-        this->expr = expr;
-        this->temp = false;
-        this->id = 0;
-    }
-
-    explicit ThreeAddressStmt(int tId, ThreeAddressExpr *expr) {
-        this->id = tId;
-        this->expr = expr;
-        this->temp = true;
-        this->targetIdent = "";
-    }*/
+//    std::string targetIdent;
+//    ThreeAddressExpr *expr;
+//    bool temp;
+//    int id;
+//
+//    ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
+//        this->targetIdent = std::move(targetIdent);
+//        this->expr = expr;
+//        this->temp = false;
+//        this->id = 0;
+//    }
+//
+//    explicit ThreeAddressStmt(int tId, ThreeAddressExpr *expr) {
+//        this->id = tId;
+//        this->expr = expr;
+//        this->temp = true;
+//        this->targetIdent = "";
+//    }
     ThreeAddressExpr *expr;
 
     explicit ThreeAddressStmt(ThreeAddressExpr *expr) {
@@ -150,3 +151,4 @@ private:
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H
+*/

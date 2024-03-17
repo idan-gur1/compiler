@@ -10,7 +10,7 @@ NodeExpr *Parser::parseArrayBrackets() {
     NodeExprP indexExpr = this->parseExpr();
 
     if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
-        Parser::throwSyntaxError("']' expected");
+        this->throwSyntaxError("']' expected");
     }
 
     return indexExpr;
@@ -130,7 +130,7 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
 }*/
 
 std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
-    if (!this->lexer->hasNextToken()) {
+    if (!this->lexer->hasNextToken() || this->lexer->currentToken().type == TokenType::closeCurly) {
         return {nullptr, false};
     }
 
@@ -145,6 +145,9 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         stmt = stmtVariableDeclaration(VariableType::intType);
     } else if (firstToken.type == TokenType::charKeyword) {
         stmt = stmtVariableDeclaration(VariableType::charType);
+    } else if (firstToken.type == TokenType::openCurly) {
+        stmt = parseScope();
+        return {stmt, true}; // prevent the need for stmt delimiter;
     } else if (firstToken.type == TokenType::semiColon) {
         // Ignore
     } else {
@@ -160,7 +163,7 @@ NodeScope *Parser::parseScope() {
     auto scope = new NodeScope();
 
     if (!checkForTokenTypeAndConsume(TokenType::openCurly)) {
-        Parser::throwSyntaxError("'{' expected");
+        this->throwSyntaxError("'{' expected");
     }
 
     this->scopes.push(scope);
@@ -177,25 +180,22 @@ NodeScope *Parser::parseScope() {
     this->scopes.pop();
 
     if (!checkForTokenTypeAndConsume(TokenType::closeCurly)) {
-        Parser::throwSyntaxError("'}' expected");
+        this->throwSyntaxError("'}' expected");
     }
 
     return scope;
 }
 
-void Parser::throwError(const std::string &errorMsg) {
-    std::cout << "Parser Error: " << errorMsg << std::endl;
-    exit(1);
-}
-
 void Parser::throwSyntaxError(const std::string &errorMsg) {
-    std::cout << "Parser Error [Syntax Error]: " << errorMsg << std::endl;
-    exit(1);
+    /*std::cout << "Parser Error [Syntax Error]: " << errorMsg << std::endl;
+    exit(1);*/
+    throw CompilationException("[Parser - Syntax Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 void Parser::throwSemanticError(const std::string &errorMsg) {
-    std::cout << "Parser Error [Semantic Error]: " << errorMsg << std::endl;
-    exit(1);
+    /*std::cout << "Parser Error [Semantic Error]: " << errorMsg << std::endl;
+    exit(1);*/
+    throw CompilationException("[Parser - Semantic Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 bool Parser::checkForTokenType(TokenType type) {
@@ -208,13 +208,13 @@ bool Parser::checkForTokenTypeAndConsume(TokenType type) {
 
 void Parser::stmtDelimiterTokenExists() {
     if(!checkForTokenTypeAndConsume(TokenType::semiColon)) {
-        Parser::throwSyntaxError("';' expected");
+        this->throwSyntaxError("';' expected");
     };
 }
 
 void Parser::identifierTokenExists() {
     if (!checkForTokenType(TokenType::identifier)) {
-        Parser::throwSyntaxError("Identifier expected");
+        this->throwSyntaxError("Identifier expected");
     }
 }
 
@@ -262,7 +262,7 @@ Variable Parser::getVarCurrentScope(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
-    Parser::throwSemanticError("Use of undeclared identifier " + varName);
+    this->throwSemanticError("Use of undeclared identifier " + varName);
 }
 
 Variable Parser::getVarScopeStack(const std::string &varName) {
@@ -270,5 +270,5 @@ Variable Parser::getVarScopeStack(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
-    Parser::throwSemanticError("Use of undeclared identifier " + varName);
+    this->throwSemanticError("Use of undeclared identifier " + varName);
 }

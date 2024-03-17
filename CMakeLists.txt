@@ -14,4 +14,5 @@ add_executable(compiler main.cpp
         generation.cpp
         generation.h
         parserStatements.cpp
-        parserExpressions.cpp)
+        parserExpressions.cpp
+        errorHandling.h)

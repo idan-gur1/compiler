@@ -10,7 +10,7 @@ NodeExpr *Parser::parseFactor() {
     if (!this->lexer->hasNextToken()) {
         /*std::cout << "Syntax Error: Token expected" << std::endl;
         exit(1);*/
-        Parser::throwSyntaxError("Number, identifier or parenthesis expected");
+        this->throwSyntaxError("Number, identifier or parenthesis expected");
     }
 
     Token currentToken = this->lexer->currentAndProceedToken();
@@ -18,7 +18,7 @@ NodeExpr *Parser::parseFactor() {
     if (currentToken.type != TokenType::immediateInteger &&
         currentToken.type != TokenType::identifier &&
         currentToken.type != TokenType::openParenthesis) {
-        Parser::throwSyntaxError("Number, identifier or parenthesis expected");
+        this->throwSyntaxError("Number, identifier or parenthesis expected");
     }
 
     if (currentToken.type == TokenType::immediateInteger) {
@@ -27,11 +27,15 @@ NodeExpr *Parser::parseFactor() {
         Variable var = this->getVarScopeStack(currentToken.val);
 
         if (!var.ptrType && var.arrSize == 0) {
+            if (this->checkForTokenType(TokenType::openSquare)) {
+                this->throwSemanticError("'" + var.name + "' is not subscriptable");
+            }
+
             return new NodeVariableTerminal(var);
         }
 
         if (!this->checkForTokenType(TokenType::openSquare)) {
-            Parser::throwSemanticError("'" + var.name + "' must be indexed in expressions");
+            this->throwSemanticError("'" + var.name + "' must be indexed in expressions");
         }
 
         return new NodeSubscriptableVariableTerminal(var, parseArrayBrackets());
@@ -39,9 +43,8 @@ NodeExpr *Parser::parseFactor() {
 
     NodeExprP innerExpr = parseExpr();
 
-    if (!this->lexer->hasNextToken() ||
-        this->lexer->currentAndProceedToken().type != TokenType::closeParenthesis) {
-        Parser::throwSyntaxError("')' expected");
+    if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
+        this->throwSyntaxError("')' expected");
     }
 
     return new ParenthesisNodeExpr(innerExpr);
@@ -49,7 +52,7 @@ NodeExpr *Parser::parseFactor() {
 
 NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        Parser::throwSyntaxError("Token expected");
+        this->throwSyntaxError("Token expected");
     }
 
     NodeExprP currentTerm = parseFactor();
@@ -84,7 +87,7 @@ NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
 
 NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        Parser::throwSyntaxError("Token expected");
+        this->throwSyntaxError("Token expected");
     }
 
     NodeExprP currentExpr = parseTerm();
@@ -115,4 +118,20 @@ NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     }
 
     return parseExpr(leftExpr, op.type);
+}
+
+NodeExpr *Parser::parseRelationalExpr(NodeExprP leftSibling) {
+    return nullptr;
+}
+
+NodeExpr *Parser::parseEqualityExpr(NodeExprP leftSibling) {
+    return nullptr;
+}
+
+NodeExpr *Parser::parseLogicalAndExpr(NodeExprP leftSibling) {
+    return nullptr;
+}
+
+NodeExpr *Parser::parseLogicalOrExpr(NodeExprP leftSibling) {
+    return nullptr;
 }

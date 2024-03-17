@@ -105,6 +105,20 @@ public:
     }
 };
 
+class NodeBoolEqualsExpr : public BinaryNodeExpr {
+public:
+
+    NodeBoolEqualsExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeBoolNotEqualsExpr : public BinaryNodeExpr {
+public:
+
+    NodeBoolNotEqualsExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
 class NodeImIntTerminal : public TerminalNodeExpr {
 public:
     std::string value;
@@ -112,12 +126,6 @@ public:
     }
 };
 
-/*class NodeIdentTerminal : public TerminalNodeExpr {
-public:
-
-    explicit NodeIdentTerminal(Token t) : TerminalNodeExpr(std::move(t)) {
-    }
-};*/
 class NodeVariableTerminal : public TerminalNodeExpr {
 public:
     Variable variable;
@@ -144,21 +152,6 @@ public:
     virtual ~NodeStmt() = default;
 };
 
-//class NodeAssignmentStmt : public NodeStmt{
-//public:
-//    Token ident;
-//    NodeExpr *expr;
-//
-//    NodeAssignmentStmt(Token ident, NodeExpr *expr) {
-//        this->ident = std::move(ident);
-//        this->expr = expr;
-//    }
-//
-//    ~NodeAssignmentStmt() override {
-//        delete expr;
-//    }
-//    ~NodeAssignmentStmt() override = default;
-//};
 class NodePrimitiveAssignmentStmt : public NodeStmt {
 public:
     Variable variable;
@@ -217,14 +210,14 @@ public:
 };
 //endregion
 
-class NodeScope {
+class NodeScope : public NodeStmt{
 public:
     std::vector<NodeStmt *> stmts;
     std::vector<Variable> vars;
 
     explicit NodeScope() = default;
 
-    ~NodeScope() {
+    ~NodeScope() override {
         for (auto &stmt: stmts) {
             delete stmt;
         }

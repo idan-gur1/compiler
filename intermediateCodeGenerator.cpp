@@ -2,7 +2,7 @@
 // Created by idang on 24/12/2023.
 //
 
-#include <fstream>
+/*#include <fstream>
 #include "intermediateCodeGenerator.h"
 #include "lexer.h"
 
@@ -17,20 +17,6 @@ std::string uniExprToStr(UniExpr *uniExpr) {
 
 std::string ilStmtToStr(ThreeAddressStmt *taStmt) {
     std::stringstream strStream;
-
-//    strStream << taStmt->targetIdent;
-//
-//    if (taStmt->temp) {
-//        strStream << " = ";
-//    } else {
-//        strStream << " := ";
-//    }
-//
-//    if (auto binExpr = dynamic_cast<BinaryExprP>(taStmt->expr)) {
-//        strStream << binExpr->left.val << " " << getTokenName(binExpr->op) << " " << binExpr->right.val << std::endl;
-//    } else if (auto uniExpr = dynamic_cast<UniExprP>(taStmt->expr)) {
-//        strStream << uniExpr->val.val << std::endl;
-//    }
 
     if (auto tempTAS = dynamic_cast<TempAssignmentTAStmtP>(taStmt)) {
         strStream << "temp" << tempTAS->id << " := ";
@@ -182,4 +168,4 @@ void ILGenerator::generateProgramIL() {
 
     outFile.close();
 
-}
+}*/

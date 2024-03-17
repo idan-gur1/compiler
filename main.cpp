@@ -5,13 +5,14 @@
 #include "lexer.h"
 #include "parser.h"
 #include "intermediateCodeGenerator.h"
+#include "errorHandling.h"
 
 void printExprTree(NodeExprP expr) {
 
     //auto imIntFactor = dynamic_cast<NodeImIntFactorP>(expr);
 
     if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
-        std::cout << "Terminal -> type: " << getTokenName(terminal->val.type) << "Terminal -> type: " << terminal->val.val << std::endl;
+
         return;
     }
 
@@ -37,28 +38,6 @@ void printExprTree(NodeExprP expr) {
         printExprTree(parenthesisExpr->expr);
         std::cout << "exited parenthesis node" << std::endl;
     }
-
-    // old printing
-    /*if (auto divExpr = dynamic_cast<NodeDivExprP>(expr)) {
-        printTree(divExpr->left);
-        std::cout << "div term" << std::endl;
-        printTree(divExpr->right);
-    }
-    else if (auto mulExpr = dynamic_cast<NodeMultExprP>(expr)) {
-        printTree(mulExpr->left);
-        std::cout << "mult term" << std::endl;
-        printTree(mulExpr->right);
-    }
-    else if (auto addExpr = dynamic_cast<NodeAddExprP>(expr)) {
-        printTree(addExpr->left);
-        std::cout << "add expr" << std::endl;
-        printTree(addExpr->right);
-    }
-    else if (auto subExpr = dynamic_cast<NodeSubExprP>(expr)) {
-        printTree(subExpr->left);
-        std::cout << "sub expr" << std::endl;
-        printTree(subExpr->right);
-    }*/
 }
 
 int main(int argc, char *argv[]) {
@@ -89,41 +68,27 @@ int main(int argc, char *argv[]) {
 
     inputFile.close();
 
-    auto *lexer = new Lexer(fileContent);
+    Lexer *lexer = nullptr;
+    Parser *parser = nullptr;
+    NodeScopeP scope = nullptr;
 
-    std::vector<Token> tokens = lexer->analyseSource();
+    try {
+        lexer = new Lexer(fileContent);
 
-    /*std::cout << std::setw(20) << std::left << "Token" << std::setw(20) << std::left << "Value" << std::endl;
+        std::vector<Token> tokens = lexer->analyseSource();
 
-    for (const Token& t : tokens) {
-        std::cout << std::setw(20) << std::left << getTokenName(t.type) << std::setw(20) << std::left << t.val << std::endl;
-    }*/
+        parser = new Parser(lexer);
 
-    auto parser = new Parser(lexer);
 
-    //NodeExprP expr = parser->parseExpr();
-
-    //printExprTree(expr);
-
-//    auto stmt = parser->parseStmt();
-    auto scope = parser->parseScope();
-
-//    printExprTree(stmt->expr);
-
-    auto ilGenerator = new ILGenerator(scope, "../test.il");
-
-//    generator->generateExprIL(stmt->expr);
-    ilGenerator->generateProgramIL();
-
-    for (ThreeAddressStmt *taeP:ilGenerator->ilStmts) {
-        std::cout << ilStmtToStr(taeP);
+        scope = parser->parseScope();
+    } catch (const CompilationException &e) {
+        std::cout << e.what() << std::endl;
     }
 
-
-    //delete expr;
+    std::cout << "compilation finished - cleaning memory" << std::endl;
+    delete scope;
     delete parser;
     delete lexer;
-    delete ilGenerator;
 
     return 0;
 }

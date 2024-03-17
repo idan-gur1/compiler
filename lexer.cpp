@@ -3,7 +3,6 @@
 #include "lexer.h"
 
 
-
 //Lexer::Lexer(std::string src) : srcCode(std::move(src)) {
 //
 //}
@@ -34,8 +33,6 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::mult));
         } else if (cCur == '/') {
             this->tokens.push_back(Token(TokenType::div));
-        } else if (cCur == '=') {
-            this->tokens.push_back(Token(TokenType::equal));
         } else if (cCur == '(') {
             this->tokens.push_back(Token(TokenType::openParenthesis));
         } else if (cCur == ')') {
@@ -48,13 +45,56 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::openSquare));
         } else if (cCur == ']') {
             this->tokens.push_back(Token(TokenType::closeSquare));
+        } else if (cCur == '=') {
+            if (this->hasBuffer() && this->current() == '=') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::doubleEqual));
+            } else {
+                this->tokens.push_back(Token(TokenType::equal));
+            }
         } else if (cCur == '&') {
-            this->tokens.push_back(Token(TokenType::ampersand));
+            if (this->hasBuffer() && this->current() == '&') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::logicalAnd));
+            } else {
+                this->tokens.push_back(Token(TokenType::ampersand));
+            }
+        } else if (cCur == '|') {
+            if (this->hasBuffer() && this->current() == '|') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::logicalOr));
+            } else {
+                this->tokens.push_back(Token(TokenType::pipe));
+            }
+        } else if (cCur == '!') {
+            if (this->hasBuffer() && this->current() == '=') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::notEqual));
+            } else {
+                this->tokens.push_back(Token(TokenType::exclamation));
+            }
+        } else if (cCur == '>') {
+            if (this->hasBuffer() && this->current() == '=') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::relationalGE));
+            } else {
+                this->tokens.push_back(Token(TokenType::relationalG));
+            }
+        } else if (cCur == '<') {
+            if (this->hasBuffer() && this->current() == '=') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(TokenType::relationalLE));
+            } else {
+                this->tokens.push_back(Token(TokenType::relationalL));
+            }
         } else if (std::isdigit(cCur)) {
             std::string buffer(1, cCur);
 
             while (this->hasBuffer() && std::isdigit(this->current())) {
                 buffer.push_back(this->currentAndProceed());
+            }
+            if (this->hasBuffer() && std::isalpha(this->current())) {
+                this->throwLexerError("Invalid character '" + std::string(1, cCur) + "'");
             }
 
             this->tokens.push_back(Token(TokenType::immediateInteger, buffer));
@@ -76,27 +116,47 @@ std::vector<Token> Lexer::analyseSource() {
             }
         } else if (cCur == ';') {
             this->tokens.push_back(Token(TokenType::semiColon));
+        } else if (cCur == '\n') {
+            this->currentLine++;
+            this->tokens.push_back(Token(TokenType::NEW_LINE));
         } else if (std::isspace(cCur)) {
             // ignore
         } else {
-            std::cout << "Lexer Error: Unknown character/token " << cCur << " ." << std::endl;
-            std::exit(1);
+//            throw CompilationException("[Lexer] Unknown character/token " + std::string(1, cCur));
+            this->throwLexerError("[Lexer] Unknown character/token " + std::string(1, cCur));
         }
+    }
+
+    this->currentLine = 1;
+
+    if (this->hasNextToken() && this->currentToken().type == TokenType::NEW_LINE) {
+        currentAndProceedToken();
     }
 
     return this->tokens;
 }
 
-bool Lexer::hasNextToken(int offset) {
-    return nTokenIndex + offset < tokens.size();
+bool Lexer::hasNextToken() {
+    return nTokenIndex < tokens.size();
 }
 
-Token Lexer::currentToken(int offset) {
-    return this->tokens[nTokenIndex + offset];
+Token Lexer::currentToken() {
+    return this->tokens[nTokenIndex];
 }
 
 Token Lexer::currentAndProceedToken() {
-    return this->tokens[nTokenIndex++];
+    Token ret =  this->tokens[nTokenIndex++];
+
+    while (this->hasNextToken() && this->tokens[nTokenIndex].type == TokenType::NEW_LINE) {
+        this->currentLine++;
+        nTokenIndex++;
+    }
+
+    return ret;
+}
+
+void Lexer::throwLexerError(const std::string &errorMsg) const {
+    throw CompilationException("[Lexer] " + errorMsg + " On line " + std::to_string(this->currentLine));
 }
 
 

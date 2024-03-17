@@ -2,6 +2,7 @@
 // Created by idang on 04/02/2024.
 //
 
+/*
 #include "generation.h"
 
 std::string Generator::generateProgram() {
@@ -28,3 +29,4 @@ std::string Generator::generateProgram() {
 
     return this->programOut.str();
 }
+*/

@@ -21,7 +21,10 @@ public:
                         TokenType siblingOpType = TokenType::NO_TOKEN);
 
 private:
-//    bool varExistsCurrentScope(const std::string&);
+    NodeExpr *parseLogicalOrExpr(NodeExprP leftSibling = nullptr);
+    NodeExpr *parseLogicalAndExpr(NodeExprP leftSibling = nullptr);
+    NodeExpr *parseEqualityExpr(NodeExprP leftSibling = nullptr);
+    NodeExpr *parseRelationalExpr(NodeExprP leftSibling = nullptr);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseFactor();
@@ -38,9 +41,8 @@ private:
     void stmtDelimiterTokenExists();
     void identifierTokenExists();
 
-    static void throwError(const std::string& errorMsg);
-    static void throwSyntaxError(const std::string& errorMsg);
-    static void throwSemanticError(const std::string& errorMsg);
+    void throwSyntaxError(const std::string& errorMsg);
+    void throwSemanticError(const std::string& errorMsg);
 
     NodeStmt *stmtByIdentifier(const Token& ident);
     NodeStmt *stmtPrimitiveAssignment(const Variable& var);

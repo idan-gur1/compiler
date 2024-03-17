@@ -9,7 +9,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
 //    if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::ampersand) {
     if (!checkForTokenType(TokenType::ampersand)) {
         if (var.ptrType || var.arrSize > 0) {
-            Parser::throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+            this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
         }
 
         return new NodePrimitiveAssignmentStmt(var, this->parseExpr());
@@ -17,7 +17,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
     this->lexer->currentAndProceedToken();
 
     if (!var.ptrType) {
-        Parser::throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
     }
 
     identifierTokenExists();
@@ -32,10 +32,10 @@ NodeStmt *Parser::stmtArrayAssignment(const Variable& var) {
     NodeExprP indexExpr = this->parseExpr();
 
     if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
-        Parser::throwError("[Syntax Error] ']' expected");
+        this->throwError("[Syntax Error] ']' expected");
     }*/
     if (var.arrSize == 0 && !var.ptrType) {
-        Parser::throwSemanticError("'" + var.name + "' is not subscriptable");
+        this->throwSemanticError("'" + var.name + "' is not subscriptable");
     }
 
     NodeExprP indexExpr = this->parseArrayBrackets();
@@ -72,17 +72,17 @@ NodeStmt *Parser::stmtVariableDeclaration(VariableType type) {
     std::string varName = this->lexer->currentAndProceedToken().val;
 
     if (varExistsCurrentScope(varName)) {
-        Parser::throwSemanticError("Redeclaration of identifier " + varName);
+        this->throwSemanticError("Redeclaration of identifier " + varName);
     }
 
 
     if (checkForTokenType(TokenType::openSquare)) {
-        if (ptr) Parser::throwSemanticError("Arrays can only be of primitive types");
+        if (ptr) this->throwSemanticError("Arrays can only be of primitive types");
 
         auto sizeExpr = dynamic_cast<NodeImIntTerminalP>(parseArrayBrackets());
 
         if (!sizeExpr) {
-            Parser::throwSemanticError("Array size must be known at compile time");
+            this->throwSemanticError("Array size must be known at compile time");
         }
 
         this->addVarToCurrentScope(Variable(varName, type, ptr, std::stoi(sizeExpr->value)));
