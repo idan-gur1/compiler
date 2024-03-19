@@ -17,14 +17,17 @@ public:
     }
     NodeScope *parseScope();
     std::tuple<NodeStmt *, bool> tryParseStmt();
-    NodeExpr *parseExpr(NodeExprP leftSibling = nullptr,
-                        TokenType siblingOpType = TokenType::NO_TOKEN);
+    NodeExpr *parseExpr();
 
 private:
     NodeExpr *parseLogicalOrExpr(NodeExprP leftSibling = nullptr);
     NodeExpr *parseLogicalAndExpr(NodeExprP leftSibling = nullptr);
-    NodeExpr *parseEqualityExpr(NodeExprP leftSibling = nullptr);
-    NodeExpr *parseRelationalExpr(NodeExprP leftSibling = nullptr);
+    NodeExpr *parseEqualityExpr(NodeExprP leftSibling = nullptr,
+                        TokenType siblingOpType = TokenType::NO_TOKEN);
+    NodeExpr *parseRelationalExpr(NodeExprP leftSibling = nullptr,
+                        TokenType siblingOpType = TokenType::NO_TOKEN);
+    NodeExpr *parseNumericExpr(NodeExprP leftSibling = nullptr,
+                        TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseFactor();

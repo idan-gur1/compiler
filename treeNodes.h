@@ -105,6 +105,20 @@ public:
     }
 };
 
+class NodeLogicalOrExpr : public BinaryNodeExpr {
+public:
+
+    NodeLogicalOrExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeLogicalAndExpr : public BinaryNodeExpr {
+public:
+
+    NodeLogicalAndExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
 class NodeBoolEqualsExpr : public BinaryNodeExpr {
 public:
 
@@ -116,6 +130,34 @@ class NodeBoolNotEqualsExpr : public BinaryNodeExpr {
 public:
 
     NodeBoolNotEqualsExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeBiggerThanExpr : public BinaryNodeExpr {
+public:
+
+    NodeBiggerThanExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeBiggerThanEqualExpr : public BinaryNodeExpr {
+public:
+
+    NodeBiggerThanEqualExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeLessThanExpr : public BinaryNodeExpr {
+public:
+
+    NodeLessThanExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
+class NodeLessThanEqualExpr : public BinaryNodeExpr {
+public:
+
+    NodeLessThanEqualExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
     }
 };
 
@@ -225,12 +267,13 @@ public:
 };
 
 typedef NodeScope *NodeScopeP;
+
 typedef NodeStmt *NodeStmtP;
-//typedef NodeAssignmentStmt *NodeAssignmentStmtP;
 typedef NodePrimitiveAssignmentStmt *NodePrimitiveAssignmentStmtP;
 typedef NodePointerAddrAssignmentStmt *NodePointerAddrAssignmentStmtP;
 typedef NodePointerValueAssignmentStmt *NodePointerValueAssignmentStmtP;
 typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
+
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
 typedef ParenthesisNodeExpr *ParenthesisNodeExprP;
@@ -239,6 +282,14 @@ typedef NodeAddExpr *NodeAddExprP;
 typedef NodeSubExpr *NodeSubExprP;
 typedef NodeMultExpr *NodeMultExprP;
 typedef NodeDivExpr *NodeDivExprP;
+typedef NodeLogicalOrExpr *NodeLogicalOrExprP;
+typedef NodeLogicalAndExpr *NodeLogicalAndExprP;
+typedef NodeBoolEqualsExpr *NodeBoolEqualsExprP;
+typedef NodeBoolNotEqualsExpr *NodeBoolNotEqualsExprP;
+typedef NodeBiggerThanExpr *NodeBiggerThanExprP;
+typedef NodeBiggerThanEqualExpr *NodeBiggerThanEqualExprP;
+typedef NodeLessThanExpr *NodeLessThanExprP;
+typedef NodeLessThanEqualExpr *NodeLessThanEqualExprP;
 typedef NodeImIntTerminal *NodeImIntTerminalP;
 typedef NodeVariableTerminal *NodeVariableTerminalP;
 typedef NodeSubscriptableVariableTerminal *NodeSubscriptableVariableTerminalP;

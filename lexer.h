@@ -85,6 +85,8 @@ private:
     char current();
     char currentAndProceed();
     bool hasBuffer();
+
+    void countLines();
 };
 
 

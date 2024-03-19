@@ -129,9 +129,7 @@ std::vector<Token> Lexer::analyseSource() {
 
     this->currentLine = 1;
 
-    if (this->hasNextToken() && this->currentToken().type == TokenType::NEW_LINE) {
-        currentAndProceedToken();
-    }
+    this->countLines();
 
     return this->tokens;
 }
@@ -147,18 +145,21 @@ Token Lexer::currentToken() {
 Token Lexer::currentAndProceedToken() {
     Token ret =  this->tokens[nTokenIndex++];
 
+    this->countLines();
+
+    return ret;
+}
+
+void Lexer::countLines() {
     while (this->hasNextToken() && this->tokens[nTokenIndex].type == TokenType::NEW_LINE) {
         this->currentLine++;
         nTokenIndex++;
     }
-
-    return ret;
 }
 
 void Lexer::throwLexerError(const std::string &errorMsg) const {
     throw CompilationException("[Lexer] " + errorMsg + " On line " + std::to_string(this->currentLine));
 }
-
 
 std::string getTokenName(TokenType tokenType) {
     if (tokenType == TokenType::plus) return "+";
@@ -172,8 +173,22 @@ std::string getTokenName(TokenType tokenType) {
     if (tokenType == TokenType::closeCurly) return "}";
     if (tokenType == TokenType::immediateInteger) return "immediateInteger";
     if (tokenType == TokenType::identifier) return "identifier";
+    if (tokenType == TokenType::intKeyword) return "int";
+    if (tokenType == TokenType::charKeyword) return "char";
     if (tokenType == TokenType::exit) return "exit";
-    if (tokenType == TokenType::semiColon) return "semiColon";
+    if (tokenType == TokenType::semiColon) return ";";
+    if (tokenType == TokenType::openSquare) return "[";
+    if (tokenType == TokenType::closeSquare) return "]";
+    if (tokenType == TokenType::exclamation) return "!";
+    if (tokenType == TokenType::ampersand) return "&";
+    if (tokenType == TokenType::pipe) return "|";
+    if (tokenType == TokenType::logicalOr) return "||";
+    if (tokenType == TokenType::logicalAnd) return "&&";
+    if (tokenType == TokenType::doubleEqual) return "==";
+    if (tokenType == TokenType::notEqual) return "!=";
+    if (tokenType == TokenType::relationalG) return ">";
+    if (tokenType == TokenType::relationalL) return "<";
+    if (tokenType == TokenType::relationalLE) return "<=";
 
     return "Unknown Token";
 }
