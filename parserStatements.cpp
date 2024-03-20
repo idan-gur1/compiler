@@ -6,9 +6,13 @@
 
 NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
     this->lexer->currentAndProceedToken(); // Remove the equals
-//    if (this->lexer->hasNextToken() && this->lexer->currentToken().type == TokenType::ampersand) {
+
+    if (var.arrSize > 0) {
+        this->throwSemanticError("'" + var.name + "' of time array is constant");
+    }
+
     if (!checkForTokenType(TokenType::ampersand)) {
-        if (var.ptrType || var.arrSize > 0) {
+        if (var.ptrType) {
             this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
         }
 

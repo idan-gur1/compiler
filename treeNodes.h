@@ -64,16 +64,37 @@ public:
     ~TerminalNodeExpr() override = default;
 };
 
-class ParenthesisNodeExpr : public NodeExpr {
+class UnaryNodeExpr : public NodeExpr {
 public:
     NodeExpr *expr;
 
-    explicit ParenthesisNodeExpr(NodeExpr *expr) {
+    explicit UnaryNodeExpr(NodeExpr *expr) {
         this->expr = expr;
     }
 
-    ~ParenthesisNodeExpr() override {
+    ~UnaryNodeExpr() override {
         delete expr;
+    }
+};
+
+class NodeParenthesisExpr : public UnaryNodeExpr {
+public:
+
+    explicit NodeParenthesisExpr(NodeExpr *expr) : UnaryNodeExpr(expr) {
+    }
+};
+
+class NodeLogicalNotExpr : public UnaryNodeExpr {
+public:
+
+    explicit NodeLogicalNotExpr(NodeExpr *expr) : UnaryNodeExpr(expr) {
+    }
+};
+
+class NodeNumericNegExpr : public UnaryNodeExpr {
+public:
+
+    explicit NodeNumericNegExpr(NodeExpr *expr) : UnaryNodeExpr(expr) {
     }
 };
 
@@ -276,7 +297,7 @@ typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
 
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
-typedef ParenthesisNodeExpr *ParenthesisNodeExprP;
+typedef NodeParenthesisExpr *ParenthesisNodeExprP;
 typedef TerminalNodeExpr *TerminalNodeExprP;
 typedef NodeAddExpr *NodeAddExprP;
 typedef NodeSubExpr *NodeSubExprP;
