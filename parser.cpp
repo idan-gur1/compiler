@@ -5,7 +5,7 @@
 #include "parser.h"
 
 NodeExpr *Parser::parseArrayBrackets() {
-    this->lexer->currentAndProceedToken(); // Remove the open square bracket
+    this->lexer->currentAndProceedToken(); // Remove the open square bracket lexeme
 
     NodeExprP indexExpr = this->parseExpr();
 
@@ -14,6 +14,40 @@ NodeExpr *Parser::parseArrayBrackets() {
     }
 
     return indexExpr;
+}
+
+NodeExpr *Parser::parseParenthesisExpr() {
+    if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
+        this->throwSyntaxError("'(' expected");
+    }
+
+    NodeExprP innerExpr = this->parseExpr();
+
+    if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
+        this->throwSyntaxError("')' expected");
+    }
+
+    return innerExpr;
+}
+
+std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
+    if (!checkForTokenType(TokenType::openParenthesis)) {
+        this->throwSyntaxError("'(' expected");
+    }
+
+    std::vector<NodeExpr *> exprList;
+
+    do {
+        this->lexer->currentAndProceedToken(); // Remove the open coma or open parenthesis lexeme
+
+        exprList.push_back(parseExpr());
+    } while (this->checkForTokenType(TokenType::coma));
+
+    if (!this->checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
+        this->throwSyntaxError("')' expected");
+    }
+
+    return exprList;
 }
 
 /*NodeExpr *Parser::parseFactor() {
@@ -142,9 +176,15 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
     if (firstToken.type == TokenType::identifier) {
         stmt = this->stmtByIdentifier(this->lexer->currentAndProceedToken());
     } else if (firstToken.type == TokenType::intKeyword) {
-        stmt = stmtVariableDeclaration(VariableType::intType);
+        stmt = this->stmtVariableDeclaration(VariableType::intType);
     } else if (firstToken.type == TokenType::charKeyword) {
-        stmt = stmtVariableDeclaration(VariableType::charType);
+        stmt = this->stmtVariableDeclaration(VariableType::charType);
+    } else if (firstToken.type == TokenType::ifKeyword) {
+        stmt = this->stmtIf();
+    } else if (firstToken.type == TokenType::whileKeyword) {
+        stmt = this->stmtWhile();
+    } else if (firstToken.type == TokenType::ifKeyword) {
+        stmt = this->stmtWhile(true);
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
         return {stmt, true}; // prevent the need for stmt delimiter;

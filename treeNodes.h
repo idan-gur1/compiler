@@ -9,6 +9,7 @@
 #include "lexer.h"
 
 enum class VariableType {
+    voidType,  // For functions
     intType,
     charType,
 };
@@ -271,9 +272,8 @@ public:
         delete expr;
     }
 };
-//endregion
 
-class NodeScope : public NodeStmt{
+class NodeScope : public NodeStmt {
 public:
     std::vector<NodeStmt *> stmts;
     std::vector<Variable> vars;
@@ -283,6 +283,77 @@ public:
     ~NodeScope() override {
         for (auto &stmt: stmts) {
             delete stmt;
+        }
+    }
+};
+
+class NodeIf : public NodeStmt {
+public:
+    NodeExpr *expr;
+    NodeScope *ifBlock;
+    NodeScope *elseBlock;
+
+    NodeIf(NodeExpr *expr, NodeScope *ifBlock, NodeScope *elseBlock) {
+        this->expr = expr;
+        this->ifBlock = ifBlock;
+        this->elseBlock = elseBlock;
+    }
+
+    ~NodeIf() override {
+        delete expr;
+        delete ifBlock;
+        delete elseBlock;
+    }
+};
+
+class NodeWhile : public NodeStmt {
+public:
+    NodeExpr *expr;
+    NodeScope *codeBlock;
+    bool isDoWhile;
+
+    NodeWhile(NodeExpr *expr, NodeScope *codeBlock, bool isDoWhile) {
+        this->expr = expr;
+        this->codeBlock = codeBlock;
+        this->isDoWhile = isDoWhile;
+    }
+
+    ~NodeWhile() override {
+        delete expr;
+        delete codeBlock;
+    }
+};
+//endregion
+
+class NodeFunction {
+public:
+    VariableType returnType;
+    bool returnPtr;
+    std::string name;
+    std::vector<Variable> params;
+    NodeScope *scope;
+
+    NodeFunction(VariableType returnType, bool returnPtr, std::string name) {
+        this->returnType = returnType;
+        this->returnPtr = returnPtr;
+        this->name = std::move(name);
+        this->scope = nullptr;
+    }
+
+    ~NodeFunction() {
+        delete scope;
+    }
+};
+
+class Program {
+public:
+    std::vector<NodeFunction *> functions;
+
+    explicit Program() = default;
+
+    ~Program() {
+        for (auto &function: functions) {
+            delete function;
         }
     }
 };

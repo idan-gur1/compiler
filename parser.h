@@ -15,6 +15,9 @@ public:
     explicit Parser(Lexer *lexer) {
         this->lexer = lexer;
     }
+
+    Program *parseProgram();
+    NodeFunction *parseFunction();
     NodeScope *parseScope();
     std::tuple<NodeStmt *, bool> tryParseStmt();
     NodeExpr *parseExpr();
@@ -32,6 +35,8 @@ private:
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseFactor();
     NodeExpr *parseArrayBrackets();
+    NodeExpr *parseParenthesisExpr();
+    std::vector<NodeExpr *> parseParenthesisExprList();
 
     std::optional<Variable> varExistsCurrentScope(const std::string&);
     std::optional<Variable> varExistsScopeStack(const std::string&);
@@ -52,6 +57,9 @@ private:
     NodeStmt *stmtArrayAssignment(const Variable& var);
 
     NodeStmt *stmtVariableDeclaration(VariableType type);
+
+    NodeStmt *stmtIf();
+    NodeStmt *stmtWhile(bool isDo = false);
 
     Lexer *lexer;
 //    std::unordered_set<std::string> variables;

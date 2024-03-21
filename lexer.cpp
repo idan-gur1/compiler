@@ -45,6 +45,8 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::openSquare));
         } else if (cCur == ']') {
             this->tokens.push_back(Token(TokenType::closeSquare));
+        } else if (cCur == ',') {
+            this->tokens.push_back(Token(TokenType::coma));
         } else if (cCur == '=') {
             if (this->hasBuffer() && this->current() == '=') {
                 this->currentAndProceed();
@@ -106,11 +108,19 @@ std::vector<Token> Lexer::analyseSource() {
             }
 
             if (buffer == "exit") {
-                this->tokens.push_back(Token(TokenType::exit, buffer));
+                this->tokens.push_back(Token(TokenType::exit));
             } else if (buffer == "int") {
-                this->tokens.push_back(Token(TokenType::intKeyword, buffer));
+                this->tokens.push_back(Token(TokenType::intKeyword));
             } else if (buffer == "char") {
-                this->tokens.push_back(Token(TokenType::charKeyword, buffer));
+                this->tokens.push_back(Token(TokenType::charKeyword));
+            } else if (buffer == "if") {
+                this->tokens.push_back(Token(TokenType::ifKeyword));
+            } else if (buffer == "else") {
+                this->tokens.push_back(Token(TokenType::elseKeyword));
+            } else if (buffer == "while") {
+                this->tokens.push_back(Token(TokenType::ifKeyword));
+            } else if (buffer == "do") {
+                this->tokens.push_back(Token(TokenType::elseKeyword));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }
@@ -175,8 +185,13 @@ std::string getTokenName(TokenType tokenType) {
     if (tokenType == TokenType::identifier) return "identifier";
     if (tokenType == TokenType::intKeyword) return "int";
     if (tokenType == TokenType::charKeyword) return "char";
+    if (tokenType == TokenType::ifKeyword) return "if";
+    if (tokenType == TokenType::elseKeyword) return "else";
+    if (tokenType == TokenType::whileKeyword) return "while";
+    if (tokenType == TokenType::doKeyword) return "do";
     if (tokenType == TokenType::exit) return "exit";
     if (tokenType == TokenType::semiColon) return ";";
+    if (tokenType == TokenType::coma) return ",";
     if (tokenType == TokenType::openSquare) return "[";
     if (tokenType == TokenType::closeSquare) return "]";
     if (tokenType == TokenType::exclamation) return "!";

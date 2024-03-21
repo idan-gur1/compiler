@@ -5,7 +5,7 @@
 #include "parser.h"
 
 NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
-    this->lexer->currentAndProceedToken(); // Remove the equals
+    this->lexer->currentAndProceedToken(); // Remove the 'equals' lexeme
 
     if (var.arrSize > 0) {
         this->throwSemanticError("'" + var.name + "' of time array is constant");
@@ -31,7 +31,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
 }
 
 NodeStmt *Parser::stmtArrayAssignment(const Variable& var) {
-    /*this->lexer->currentAndProceedToken(); // Remove the open square bracket
+    /*this->lexer->currentAndProceedToken(); // Remove the open square bracket lexeme
 
     NodeExprP indexExpr = this->parseExpr();
 
@@ -67,7 +67,7 @@ NodeStmt *Parser::stmtByIdentifier(const Token& ident) {
 }
 
 NodeStmt *Parser::stmtVariableDeclaration(VariableType type) {
-    this->lexer->currentAndProceedToken(); // Remove the type lexeme
+    this->lexer->currentAndProceedToken(); // Remove the 'type' lexeme
 
     bool ptr = checkForTokenType(TokenType::mult);
     if (ptr) this->lexer->currentAndProceedToken();
@@ -105,4 +105,38 @@ NodeStmt *Parser::stmtVariableDeclaration(VariableType type) {
     this->addVarToCurrentScope(var);
 
     return stmt;
+}
+
+NodeStmt *Parser::stmtIf() {
+    this->lexer->currentAndProceedToken(); // Remove the 'if' lexeme
+
+    NodeExprP expr = parseParenthesisExpr();
+    NodeScopeP ifBlock = parseScope();
+    NodeScopeP elseBlock = nullptr;
+
+    if (this->checkForTokenType(TokenType::elseKeyword)) {
+        this->lexer->currentAndProceedToken(); // Remove the 'else' lexeme
+
+        elseBlock = parseScope();
+    }
+
+    return new NodeIf(expr, ifBlock, elseBlock);
+}
+
+NodeStmt *Parser::stmtWhile(bool isDo) {
+    this->lexer->currentAndProceedToken(); // Remove the 'while' or 'do' lexeme
+
+    NodeExprP expr = nullptr;
+
+    if (!isDo) {
+        expr = parseParenthesisExpr();
+    }
+
+    NodeScopeP codeBlock = parseScope();
+
+    if (isDo) {
+        expr = parseParenthesisExpr();
+    }
+
+    return new NodeWhile(expr, codeBlock, isDo);
 }
