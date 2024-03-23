@@ -150,6 +150,10 @@ NodeFunction *Parser::tryParseFunction() {
     bool ptr = checkForTokenType(TokenType::mult);
     if (ptr) this->lexer->currentAndProceedToken();
 
+    if (ptr && funcType == VariableType::voidType) {
+        this->throwSemanticError("Cannot return pointer of type void");
+    }
+
     identifierTokenExists();
     std::string funcName = this->lexer->currentAndProceedToken().val;
 
