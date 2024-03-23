@@ -23,145 +23,47 @@ NodeExpr *Parser::parseParenthesisExpr() {
 
     NodeExprP innerExpr = this->parseExpr();
 
-    if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
+    if (!this->checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
         this->throwSyntaxError("')' expected");
     }
 
     return innerExpr;
 }
 
-std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
-    if (!checkForTokenType(TokenType::openParenthesis)) {
+std::variant<std::vector<NodeExpr *>, std::vector<Variable>> Parser::parseParenthesisExprList(bool vars) {
+    if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
         this->throwSyntaxError("'(' expected");
     }
 
     std::vector<NodeExpr *> exprList;
+    std::vector<Variable> varsList;
 
-    do {
-        this->lexer->currentAndProceedToken(); // Remove the open coma or open parenthesis lexeme
+    while (!this->checkForTokenType(TokenType::closeParenthesis)) {
+        if (!vars) exprList.push_back(parseExpr());
+        else {
+            TokenType varTypeKeyword = this->lexer->currentAndProceedToken().type;
+            if (varTypeKeyword == TokenType::voidKeyword || !this->typeMap.contains(varTypeKeyword)) {
+                this->throwSyntaxError("Valid type expected");
+            }
 
-        exprList.push_back(parseExpr());
-    } while (this->checkForTokenType(TokenType::coma));
+            bool varPtr = checkForTokenType(TokenType::mult);
+            if (varPtr) this->lexer->currentAndProceedToken();
 
-    if (!this->checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
-        this->throwSyntaxError("')' expected");
+            identifierTokenExists();
+
+            varsList.push_back(Variable(this->lexer->currentAndProceedToken().val,
+                                        this->typeMap[varTypeKeyword], varPtr));
+        }
+
+        if (this->checkForTokenType(TokenType::coma)) this->lexer->currentAndProceedToken();
     }
+
+    this->lexer->currentAndProceedToken();
+
+    if (vars) return varsList;
 
     return exprList;
 }
-
-/*NodeExpr *Parser::parseFactor() {
-    if (!this->lexer->hasNextToken()) {
-        *//*std::cout << "Syntax Error: Token expected" << std::endl;
-        exit(1);*//*
-        Parser::throwSyntaxError("Number, identifier or parenthesis expected");
-    }
-
-    Token currentToken = this->lexer->currentAndProceedToken();
-
-    if (currentToken.type != TokenType::immediateInteger &&
-        currentToken.type != TokenType::identifier &&
-        currentToken.type != TokenType::openParenthesis) {
-        *//*std::cout << "Syntax Error: Number, identifier or parenthesis expected" << std::endl;
-        exit(1);*//*
-        Parser::throwSyntaxError("Number, identifier or parenthesis expected");
-    }
-
-    if (currentToken.type == TokenType::immediateInteger) {
-        return new NodeImIntTerminal(currentToken);
-    } else if (currentToken.type == TokenType::identifier) {
-//        if (!this->variables.contains(currentToken.val)) {
-       *//* if (!varExistsScopeStack(currentToken.val)) {
-            std::cout << "Compile Error: Use of undeclared variable " << currentToken.val << std::endl;
-            exit(1);
-        }*//*
-       Variable var = getVarScopeStack(currentToken.val);
-
-        return new NodeIdentTerminal(currentToken);
-    }
-
-    NodeExprP innerExpr = parseExpr();
-
-    if (!this->lexer->hasNextToken() ||
-        this->lexer->currentAndProceedToken().type != TokenType::closeParenthesis) {
-        std::cout << "Syntax Error: ) expected" << std::endl;
-        exit(1);
-    }
-
-    return new ParenthesisNodeExpr(innerExpr);
-}
-
-NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
-    if (!this->lexer->hasNextToken()) {
-        std::cout << "Syntax Error: Token expected" << std::endl;
-        exit(1);
-    }
-
-    NodeExprP currentTerm = parseFactor();
-
-    if (!this->lexer->hasNextToken() ||
-        (this->lexer->currentToken().type != TokenType::mult &&
-         this->lexer->currentToken().type != TokenType::div)) {
-        if (leftSibling == nullptr) {
-            return currentTerm;
-        }
-        if (siblingOpType == TokenType::mult) {
-            return new NodeMultExpr(leftSibling, currentTerm);
-        }
-
-        return new NodeDivExpr(leftSibling, currentTerm);
-    }
-
-    Token op = this->lexer->currentAndProceedToken();
-
-    NodeExprP leftTerm = currentTerm;
-
-    if (leftSibling != nullptr) {
-        if (siblingOpType == TokenType::mult) {
-            leftTerm = new NodeMultExpr(leftSibling, currentTerm);
-        } else {
-            leftTerm = new NodeDivExpr(leftSibling, currentTerm);
-        }
-    }
-
-    return parseTerm(leftTerm, op.type);
-}
-
-NodeExpr *Parser::parseExpr(NodeExprP leftSibling, TokenType siblingOpType) {
-    if (!this->lexer->hasNextToken()) {
-        std::cout << "Syntax Error: Token expected" << std::endl;
-        exit(1);
-    }
-
-    NodeExprP currentExpr = parseTerm();
-
-    if (!this->lexer->hasNextToken() ||
-        (this->lexer->currentToken().type != TokenType::plus &&
-         this->lexer->currentToken().type != TokenType::minus)) {
-        if (leftSibling == nullptr) {
-            return currentExpr;
-        }
-        if (siblingOpType == TokenType::plus) {
-            return new NodeAddExpr(leftSibling, currentExpr);
-        }
-
-        return new NodeSubExpr(leftSibling, currentExpr);
-    }
-
-    Token op = this->lexer->currentAndProceedToken();
-
-    NodeExprP leftExpr = currentExpr;
-
-    if (leftSibling != nullptr) {
-        if (siblingOpType == TokenType::plus) {
-            leftExpr = new NodeAddExpr(leftSibling, currentExpr);
-        } else {
-            leftExpr = new NodeSubExpr(leftSibling, currentExpr);
-        }
-    }
-
-    return parseExpr(leftExpr, op.type);
-}*/
 
 std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
     if (!this->lexer->hasNextToken() || this->lexer->currentToken().type == TokenType::closeCurly) {
@@ -181,10 +83,16 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         stmt = this->stmtVariableDeclaration(VariableType::charType);
     } else if (firstToken.type == TokenType::ifKeyword) {
         stmt = this->stmtIf();
+        return {stmt, true};
     } else if (firstToken.type == TokenType::whileKeyword) {
         stmt = this->stmtWhile();
-    } else if (firstToken.type == TokenType::ifKeyword) {
+        return {stmt, true};
+    } else if (firstToken.type == TokenType::doKeyword) {
         stmt = this->stmtWhile(true);
+        return {stmt, true};
+    } else if (firstToken.type == TokenType::returnKeyword) {
+        this->lexer->currentAndProceedToken();
+        stmt = new NodeReturnStmt(parseExpr());
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
         return {stmt, true}; // prevent the need for stmt delimiter;
@@ -211,7 +119,7 @@ NodeScope *Parser::parseScope() {
     std::tuple<NodeStmt *, bool> stmtTuple = this->tryParseStmt();
 
     while (get<0>(stmtTuple) || get<1>(stmtTuple)) {
-        if (get<0>(stmtTuple)){
+        if (get<0>(stmtTuple)) {
             scope->stmts.push_back(get<0>(stmtTuple));
         }
         stmtTuple = this->tryParseStmt();
@@ -226,16 +134,56 @@ NodeScope *Parser::parseScope() {
     return scope;
 }
 
+NodeFunction *Parser::tryParseFunction() {
+    if (!this->lexer->hasNextToken()) {
+        return nullptr;
+    }
+
+    TokenType typeKeyword = this->lexer->currentAndProceedToken().type;
+
+    if (!this->typeMap.contains(typeKeyword)) {
+        this->throwSyntaxError("Function type expected");
+    }
+
+    VariableType funcType = this->typeMap[typeKeyword];
+
+    bool ptr = checkForTokenType(TokenType::mult);
+    if (ptr) this->lexer->currentAndProceedToken();
+
+    identifierTokenExists();
+    std::string funcName = this->lexer->currentAndProceedToken().val;
+
+    std::vector<Variable> funcParams = std::get<std::vector<Variable>>(parseParenthesisExprList(true));
+
+    auto function = new NodeFunction(funcType, ptr, funcName, funcParams);
+
+    this->programTree->functions.push_back(function);
+
+    function->scope = this->parseScope();
+
+    return function;
+}
+
+ProgramTree *Parser::parseProgram() {
+    this->programTree = new ProgramTree();
+
+    while (this->tryParseFunction());
+
+    return this->programTree;
+}
+
 void Parser::throwSyntaxError(const std::string &errorMsg) {
     /*std::cout << "Parser Error [Syntax Error]: " << errorMsg << std::endl;
     exit(1);*/
-    throw CompilationException("[Parser - Syntax Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
+    throw CompilationException(
+            "[Parser - Syntax Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 void Parser::throwSemanticError(const std::string &errorMsg) {
     /*std::cout << "Parser Error [Semantic Error]: " << errorMsg << std::endl;
     exit(1);*/
-    throw CompilationException("[Parser - Semantic Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
+    throw CompilationException(
+            "[Parser - Semantic Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 bool Parser::checkForTokenType(TokenType type) {
@@ -247,7 +195,7 @@ bool Parser::checkForTokenTypeAndConsume(TokenType type) {
 }
 
 void Parser::stmtDelimiterTokenExists() {
-    if(!checkForTokenTypeAndConsume(TokenType::semiColon)) {
+    if (!checkForTokenTypeAndConsume(TokenType::semiColon)) {
         this->throwSyntaxError("';' expected");
     };
 }
@@ -261,13 +209,7 @@ void Parser::identifierTokenExists() {
 std::optional<Variable> Parser::varExistsScopeStack(const std::string &varName) {
     std::stack<NodeScopeP> scopesCopy = this->scopes;
     while (!scopesCopy.empty()) {
-        /*auto it = std::find_if(scopesCopy.top()->vars.begin(), scopesCopy.top()->vars.end(),
-                               [&](const Variable &v) { return v.name == varName; });
-
-        if (it != scopesCopy.top()->vars.end()) {
-            return scopesCopy.top()->vars[it - scopesCopy.top()->vars.begin()];
-        }*/
-        for (auto var : scopesCopy.top()->vars) {
+        for (auto var: scopesCopy.top()->vars) {
             if (var.name == varName) return var;
         }
 
@@ -278,14 +220,7 @@ std::optional<Variable> Parser::varExistsScopeStack(const std::string &varName) 
 }
 
 std::optional<Variable> Parser::varExistsCurrentScope(const std::string &varName) {
-//    return this->scopes.top()->vars.contains(var);
-    /*auto it = std::find_if(this->scopes.top()->vars.begin(), this->scopes.top()->vars.end(),
-                           [&](const Variable &v) { return v.name == varName; });
-
-    if (it != this->scopes.top()->vars.end()) {
-        return this->scopes.top()->vars[it - this->scopes.top()->vars.begin()];
-    }*/
-    for (auto var : this->scopes.top()->vars) {
+    for (auto var: this->scopes.top()->vars) {
         if (var.name == varName) return var;
     }
 
@@ -310,5 +245,17 @@ Variable Parser::getVarScopeStack(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
+    for (auto param : this->programTree->functions.back()->params) {
+        if (param.name == varName) return param;
+    }
+
     this->throwSemanticError("Use of undeclared identifier " + varName);
+}
+
+NodeFunction *Parser::getFunction(const std::string &funcName) {
+    for (auto funcPtr: this->programTree->functions) {
+        if (funcPtr->name == funcName) return funcPtr;
+    }
+
+    return nullptr;
 }

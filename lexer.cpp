@@ -113,14 +113,18 @@ std::vector<Token> Lexer::analyseSource() {
                 this->tokens.push_back(Token(TokenType::intKeyword));
             } else if (buffer == "char") {
                 this->tokens.push_back(Token(TokenType::charKeyword));
+            } else if (buffer == "void") {
+                this->tokens.push_back(Token(TokenType::voidKeyword));
             } else if (buffer == "if") {
                 this->tokens.push_back(Token(TokenType::ifKeyword));
             } else if (buffer == "else") {
                 this->tokens.push_back(Token(TokenType::elseKeyword));
             } else if (buffer == "while") {
-                this->tokens.push_back(Token(TokenType::ifKeyword));
+                this->tokens.push_back(Token(TokenType::whileKeyword));
             } else if (buffer == "do") {
-                this->tokens.push_back(Token(TokenType::elseKeyword));
+                this->tokens.push_back(Token(TokenType::doKeyword));
+            } else if (buffer == "return") {
+                this->tokens.push_back(Token(TokenType::returnKeyword));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }
@@ -185,6 +189,7 @@ std::string getTokenName(TokenType tokenType) {
     if (tokenType == TokenType::identifier) return "identifier";
     if (tokenType == TokenType::intKeyword) return "int";
     if (tokenType == TokenType::charKeyword) return "char";
+    if (tokenType == TokenType::voidKeyword) return "void";
     if (tokenType == TokenType::ifKeyword) return "if";
     if (tokenType == TokenType::elseKeyword) return "else";
     if (tokenType == TokenType::whileKeyword) return "while";

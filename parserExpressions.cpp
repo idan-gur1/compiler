@@ -23,6 +23,28 @@ NodeExpr *Parser::parseFactor() {
     if (currentToken.type == TokenType::immediateInteger) { // Expr terminal
         return new NodeImIntTerminal(currentToken);
     } else if (currentToken.type == TokenType::identifier) {  // Expr terminal
+        if (NodeFunctionP func = getFunction(currentToken.val)) {
+            if (func->returnType == VariableType::voidType) {
+                this->throwSemanticError("Function of type void does not return any value");
+            }
+
+            if (func->returnPtr) {
+                this->throwSemanticError("Function of return type of pointer cant be used in expressions");
+            }
+
+            std::vector<NodeExprP> params = std::get<std::vector<NodeExprP>>(parseParenthesisExprList(false));
+
+            if (params.size() != func->params.size()) {
+                for (auto &expr : params) {
+                    delete expr;
+                }
+
+                this->throwSemanticError("Function '" + currentToken.val + "' expected " + std::to_string(func->params.size()) + " parameters");
+            }
+
+            return new NodeFunctionCall(currentToken.val, params);
+        }
+
         Variable var = this->getVarScopeStack(currentToken.val);
 
         if (!var.ptrType && var.arrSize == 0) {
@@ -271,6 +293,23 @@ NodeExpr *Parser::parseLogicalOrExpr(NodeExprP leftSibling) {
     return parseLogicalOrExpr(leftExpr);
 }
 
+NodeExpr *Parser::parseAddrExpr() {
+    this->lexer->currentAndProceedToken(); // Remove the 'ampersand' lexeme
+
+    this->identifierTokenExists();
+    Variable target = getVarScopeStack(this->lexer->currentAndProceedToken().val);
+
+    if (target.ptrType) {
+        this->throwSemanticError("Cannot address pointer type");
+    }
+
+    return new AddrNodeExpr(target);
+}
+
 NodeExpr *Parser::parseExpr() {
+    if (this->checkForTokenType(TokenType::ampersand)) {
+        return parseAddrExpr();
+    }
+
     return this->parseLogicalOrExpr();
 }

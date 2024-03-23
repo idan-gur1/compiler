@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     Lexer *lexer = nullptr;
     Parser *parser = nullptr;
-    NodeScopeP scope = nullptr;
+    ProgramTreeP program = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -80,13 +80,13 @@ int main(int argc, char *argv[]) {
         parser = new Parser(lexer);
 
 
-        scope = parser->parseScope();
+        program = parser->parseProgram();
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
     }
 
     std::cout << "compilation finished - cleaning memory" << std::endl;
-    delete scope;
+    delete program;
     delete parser;
     delete lexer;
 

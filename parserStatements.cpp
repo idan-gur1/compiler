@@ -4,33 +4,36 @@
 
 #include "parser.h"
 
-NodeStmt *Parser::stmtPrimitiveAssignment(const Variable& var) {
+NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     this->lexer->currentAndProceedToken(); // Remove the 'equals' lexeme
 
     if (var.arrSize > 0) {
-        this->throwSemanticError("'" + var.name + "' of time array is constant");
+        this->throwSemanticError("'" + var.name + "' of type array is constant");
     }
 
-    if (!checkForTokenType(TokenType::ampersand)) {
-        if (var.ptrType) {
-            this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
-        }
+    NodeExpr *innerExpr = this->parseExpr();
 
-        return new NodePrimitiveAssignmentStmt(var, this->parseExpr());
-    }
-    this->lexer->currentAndProceedToken();
+    auto *ptr = dynamic_cast<AddrNodeExpr *>(innerExpr);
 
     if (!var.ptrType) {
-        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+        if (ptr) {
+            delete innerExpr;
+
+            this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+        }
+        return new NodePrimitiveAssignmentStmt(var, innerExpr);
     }
 
-    identifierTokenExists();
-    Variable targetVar = this->getVarScopeStack(this->lexer->currentAndProceedToken().val);
+    if (!ptr) this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+
+    Variable targetVar = ptr->target;
+
+    delete innerExpr;
 
     return new NodePointerAddrAssignmentStmt(var, targetVar);
 }
 
-NodeStmt *Parser::stmtArrayAssignment(const Variable& var) {
+NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
     /*this->lexer->currentAndProceedToken(); // Remove the open square bracket lexeme
 
     NodeExprP indexExpr = this->parseExpr();
@@ -54,7 +57,44 @@ NodeStmt *Parser::stmtArrayAssignment(const Variable& var) {
     return nullptr;
 }
 
-NodeStmt *Parser::stmtByIdentifier(const Token& ident) {
+NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
+    if (checkForTokenType(TokenType::openParenthesis)) {
+        NodeFunctionP func = getFunction(ident.val);
+        if (!func) {
+            this->throwSemanticError("Use of undeclared function '" + ident.val + "'");
+        }
+
+        std::vector<NodeExprP> params = std::get<std::vector<NodeExprP>>(parseParenthesisExprList(false));
+
+        if (params.size() != func->params.size()) {
+            for (auto &expr: params) {
+                delete expr;
+            }
+
+            this->throwSemanticError(
+                    "Function '" + ident.val + "' expected " + std::to_string(func->params.size()) + " parameters");
+        }
+
+        for (int i = 0; i < params.size(); ++i) {
+            auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
+
+            if (func->params[i].ptrType && !exprAddr ||
+                !func->params[i].ptrType && exprAddr) {
+                for (auto &expr: params) {
+                    delete expr;
+                }
+
+                this->throwSemanticError("Function call with incompatible type");
+            }
+        }
+
+        for (auto &param: func->params) {
+
+        }
+
+        return new NodeFunctionCall(ident.val, params);
+    }
+
     Variable var = this->getVarScopeStack(ident.val);
 
     if (checkForTokenType(TokenType::equal)) {

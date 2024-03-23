@@ -23,6 +23,7 @@ enum class TokenType {
     identifier,
     intKeyword,
     charKeyword,
+    voidKeyword,
     ifKeyword,
     elseKeyword,
     whileKeyword,

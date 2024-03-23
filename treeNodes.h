@@ -39,6 +39,15 @@ public:
     virtual ~NodeExpr() = default;
 };
 
+class AddrNodeExpr : public NodeExpr {
+public:
+    Variable target;
+
+    explicit AddrNodeExpr(Variable target) : target(std::move(target)){}
+
+    ~AddrNodeExpr() override = default;
+};
+
 class BinaryNodeExpr : public NodeExpr {
 public:
     NodeExpr *left;
@@ -323,6 +332,34 @@ public:
         delete codeBlock;
     }
 };
+
+class NodeReturnStmt : public NodeStmt {
+public:
+    NodeExpr *expr;
+
+    explicit NodeReturnStmt(NodeExpr *expr) {
+        this->expr = expr;
+    }
+
+    ~NodeReturnStmt() override {
+        delete expr;
+    }
+};
+
+class NodeFunctionCall : public TerminalNodeExpr, public NodeStmt{
+public:
+    std::string funcName;
+    std::vector<NodeExpr *> params;
+    NodeFunctionCall(std::string funcName, std::vector<NodeExpr *> params) : funcName(std::move(funcName)) {
+        this->params = std::move(params);
+    }
+
+    ~NodeFunctionCall() override {
+        for (auto &param : params) {
+            delete param;
+        }
+    }
+};
 //endregion
 
 class NodeFunction {
@@ -333,10 +370,11 @@ public:
     std::vector<Variable> params;
     NodeScope *scope;
 
-    NodeFunction(VariableType returnType, bool returnPtr, std::string name) {
+    NodeFunction(VariableType returnType, bool returnPtr, std::string name, std::vector<Variable> params) {
         this->returnType = returnType;
         this->returnPtr = returnPtr;
         this->name = std::move(name);
+        this->params = std::move(params);
         this->scope = nullptr;
     }
 
@@ -345,19 +383,21 @@ public:
     }
 };
 
-class Program {
+class ProgramTree {
 public:
     std::vector<NodeFunction *> functions;
 
-    explicit Program() = default;
+    explicit ProgramTree() = default;
 
-    ~Program() {
+    ~ProgramTree() {
         for (auto &function: functions) {
             delete function;
         }
     }
 };
 
+typedef ProgramTree *ProgramTreeP;
+typedef NodeFunction *NodeFunctionP;
 typedef NodeScope *NodeScopeP;
 
 typedef NodeStmt *NodeStmtP;
