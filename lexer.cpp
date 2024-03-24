@@ -47,6 +47,14 @@ std::vector<Token> Lexer::analyseSource() {
             this->tokens.push_back(Token(TokenType::closeSquare));
         } else if (cCur == ',') {
             this->tokens.push_back(Token(TokenType::coma));
+        } else if (cCur == '\'') {
+            char innerVal = this->currentAndProceed();
+
+            if (this->currentAndProceed() != '\'') {
+                this->throwLexerError("Expected ' At the end of char declaration");
+            }
+
+            this->tokens.push_back(Token(TokenType::immediateInteger, std::to_string(innerVal)));
         } else if (cCur == '=') {
             if (this->hasBuffer() && this->current() == '=') {
                 this->currentAndProceed();

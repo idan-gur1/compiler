@@ -92,7 +92,12 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         return {stmt, true};
     } else if (firstToken.type == TokenType::returnKeyword) {
         this->lexer->currentAndProceedToken();
-        stmt = new NodeReturnStmt(parseExpr());
+
+        if (this->programTree->functions.back()->returnType == VariableType::voidType) {
+            stmt = new NodeReturnStmt(nullptr);
+        } else {
+            stmt = new NodeReturnStmt(parseExpr());
+        }
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
         return {stmt, true}; // prevent the need for stmt delimiter;

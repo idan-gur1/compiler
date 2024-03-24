@@ -42,6 +42,20 @@ NodeExpr *Parser::parseFactor() {
                 this->throwSemanticError("Function '" + currentToken.val + "' expected " + std::to_string(func->params.size()) + " parameters");
             }
 
+            for (int i = 0; i < params.size(); ++i) {
+                auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
+
+                if (func->params[i].ptrType && !exprAddr ||
+                    !func->params[i].ptrType && exprAddr ||
+                    (exprAddr && func->params[i].type != exprAddr->target.type)) {
+                    for (auto &expr: params) {
+                        delete expr;
+                    }
+
+                    this->throwSemanticError("Function call with incompatible type");
+                }
+            }
+
             return new NodeFunctionCall(currentToken.val, params);
         }
 

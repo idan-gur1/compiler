@@ -79,17 +79,14 @@ NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
             auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
 
             if (func->params[i].ptrType && !exprAddr ||
-                !func->params[i].ptrType && exprAddr) {
+                !func->params[i].ptrType && exprAddr ||
+                (exprAddr && func->params[i].type != exprAddr->target.type)) {
                 for (auto &expr: params) {
                     delete expr;
                 }
 
                 this->throwSemanticError("Function call with incompatible type");
             }
-        }
-
-        for (auto &param: func->params) {
-
         }
 
         return new NodeFunctionCall(ident.val, params);

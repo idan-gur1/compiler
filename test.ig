@@ -1,5 +1,5 @@
 
-void check(int *b, int n) {
+void check(char *b, int n) {
     int a = b[0] + 4;
 
     b[1] = a * 5 + 4;
@@ -16,7 +16,7 @@ int calc(int a, int b) {
 
 int main() {
     int val = 14;
-    int arr[4];
+    char arr[4];
 
     check(&arr, 12);
 

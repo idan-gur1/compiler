@@ -2,7 +2,6 @@
 // Created by idang on 24/12/2023.
 //
 
-/*
 #ifndef COMPILER_INTERMEDIATECODEGENERATOR_H
 #define COMPILER_INTERMEDIATECODEGENERATOR_H
 
@@ -19,21 +18,43 @@ public:
 
 class UniExpr : public ThreeAddressExpr{
 public:
-//    Token val;
-//
-//    explicit UniExpr(Token val) {
-//        this->val = std::move(val);
-//    }
     ~UniExpr() override = default;
 };
 
 class UniVal : public UniExpr{
 public:
-    Token val;
+    ~UniVal() override = default;
+};
 
-    explicit UniVal(Token val) {
-        this->val = std::move(val);
+class ImIntVal : public UniExpr{
+public:
+    std::string value;
+
+    explicit ImIntVal(std::string value) {
+        this->value = std::move(value);
     }
+
+    ~ImIntVal() override = default;
+};
+
+class VariableVal : public UniExpr{
+public:
+    Variable var;
+
+    explicit VariableVal(Variable var) : var(std::move(var)) {
+    }
+
+    ~VariableVal() override = default;
+};
+
+class SubscriptableVariableVal : public VariableVal{
+public:
+    UniExpr index;
+
+    SubscriptableVariableVal(Variable var, const UniExpr& index) : VariableVal(std::move(var)), index(index) {
+    }
+
+    ~SubscriptableVariableVal() override = default;
 };
 
 class UniTemp : public UniExpr{
@@ -47,66 +68,89 @@ public:
 
 class BinaryExpr : public ThreeAddressExpr{
 public:
-    UniExpr *left;
-    UniExpr *right;
+    UniExpr left;
+    UniExpr right;
     TokenType op;
 
-    BinaryExpr(UniExpr *left,UniExpr *right, TokenType op) {
-        this->left = left;
-        this->right = right;
-        this->op = op;
+    BinaryExpr(const UniExpr& left,const UniExpr& right, TokenType op) : left(left), right(right), op(op) {
     }
 
-    ~BinaryExpr() override {
-        delete left;
-        delete right;
-    }
+    ~BinaryExpr() override = default;
 };
 
 class ThreeAddressStmt {
 public:
-//    std::string targetIdent;
-//    ThreeAddressExpr *expr;
-//    bool temp;
-//    int id;
-//
-//    ThreeAddressStmt(std::string targetIdent, ThreeAddressExpr *expr) {
-//        this->targetIdent = std::move(targetIdent);
-//        this->expr = expr;
-//        this->temp = false;
-//        this->id = 0;
-//    }
-//
-//    explicit ThreeAddressStmt(int tId, ThreeAddressExpr *expr) {
-//        this->id = tId;
-//        this->expr = expr;
-//        this->temp = true;
-//        this->targetIdent = "";
-//    }
-    ThreeAddressExpr *expr;
-
-    explicit ThreeAddressStmt(ThreeAddressExpr *expr) {
-        this->expr = expr;
-    }
-
-    virtual ~ThreeAddressStmt() {
-        delete expr;
-    }
+    virtual ~ThreeAddressStmt() = default;
 };
 
 class TempAssignmentTAStmt : public ThreeAddressStmt {
 public:
     int id;
-    TempAssignmentTAStmt(int id, ThreeAddressExpr *expr) : ThreeAddressStmt(expr) {
+    ThreeAddressExpr expr;
+
+    TempAssignmentTAStmt(int id, const ThreeAddressExpr& expr) : expr(expr) {
         this->id = id;
     }
 };
 
 class VarAssignmentTAStmt : public ThreeAddressStmt {
 public:
-    std::string targetIdent;
-    VarAssignmentTAStmt(std::string targetIdent, ThreeAddressExpr *expr) : ThreeAddressStmt(expr) {
-        this->targetIdent = std::move(targetIdent);
+    VariableVal var;
+    ThreeAddressExpr expr;
+
+    VarAssignmentTAStmt(const VariableVal& var, const ThreeAddressExpr& expr) : var(var), expr(expr) {
+    }
+};
+
+class FunctionDeclarationStmt : public ThreeAddressStmt {
+public:
+    std::string funcName;
+    std::vector<Variable> params;
+
+    FunctionDeclarationStmt(std::string funcName, std::vector<Variable> params) : funcName(std::move(funcName)) {
+        this->params = std::move(params);
+    }
+};
+
+class FunctionExitStmt : public ThreeAddressStmt {
+public:
+    std::string funcName;
+
+    explicit FunctionExitStmt(std::string funcName) : funcName(std::move(funcName)) {
+    }
+};
+
+class LabelStmt : public ThreeAddressStmt {
+public:
+    std::string labelName;
+
+    explicit LabelStmt(std::string labelName) : labelName(std::move(labelName)) {
+    }
+};
+
+class GotoStmt : public ThreeAddressStmt {
+public:
+    std::string labelName;
+
+    explicit GotoStmt(std::string labelName) : labelName(std::move(labelName)) {
+    }
+};
+
+class GotoIfZeroStmt : public ThreeAddressStmt {
+public:
+    std::string labelName;
+    UniExpr expr;
+
+    GotoIfZeroStmt(std::string labelName, const UniExpr& expr) : labelName(std::move(labelName)), expr(expr) {
+    }
+};
+
+class GotoIfNotZeroStmt : public ThreeAddressStmt {
+public:
+    std::string labelName;
+    UniExpr expr;
+
+    GotoIfNotZeroStmt(std::string labelName, const UniExpr& expr) : labelName(std::move(labelName)), expr(expr) {
     }
 };
 
@@ -151,4 +195,3 @@ private:
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H
-*/
