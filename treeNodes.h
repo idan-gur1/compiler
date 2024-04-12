@@ -4,6 +4,7 @@
 #define COMPILER_TREENODES_H
 
 #include <utility>
+#include <vector>
 #include <unordered_set>
 
 #include "lexer.h"

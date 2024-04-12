@@ -13,13 +13,6 @@ NodeExpr *Parser::parseFactor() {
 
     Token currentToken = this->lexer->currentAndProceedToken();
 
-    if (currentToken.type != TokenType::immediateInteger &&
-        currentToken.type != TokenType::exclamation &&
-        currentToken.type != TokenType::identifier &&
-        currentToken.type != TokenType::openParenthesis) {
-        this->throwSyntaxError("Expression expected");
-    }
-
     if (currentToken.type == TokenType::immediateInteger) { // Expr terminal
         return new NodeImIntTerminal(currentToken);
     } else if (currentToken.type == TokenType::identifier) {  // Expr terminal
@@ -34,27 +27,7 @@ NodeExpr *Parser::parseFactor() {
 
             std::vector<NodeExprP> params = std::get<std::vector<NodeExprP>>(parseParenthesisExprList(false));
 
-            if (params.size() != func->params.size()) {
-                for (auto &expr : params) {
-                    delete expr;
-                }
-
-                this->throwSemanticError("Function '" + currentToken.val + "' expected " + std::to_string(func->params.size()) + " parameters");
-            }
-
-            for (int i = 0; i < params.size(); ++i) {
-                auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
-
-                if (func->params[i].ptrType && !exprAddr ||
-                    !func->params[i].ptrType && exprAddr ||
-                    (exprAddr && func->params[i].type != exprAddr->target.type)) {
-                    for (auto &expr: params) {
-                        delete expr;
-                    }
-
-                    this->throwSemanticError("Function call with incompatible type");
-                }
-            }
+            validateFunctionCallParams(params, func);
 
             return new NodeFunctionCall(currentToken.val, params);
         }
@@ -78,15 +51,19 @@ NodeExpr *Parser::parseFactor() {
         return new NodeNumericNegExpr(this->parseFactor());
     } else if (currentToken.type == TokenType::exclamation) {
         return new NodeLogicalNotExpr(this->parseFactor());
+    } else if (currentToken.type == TokenType::openCurly) {
+        NodeExprP innerExpr = this->parseExpr();
+
+        if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
+            this->throwSyntaxError("')' expected");
+        }
+
+        return new NodeParenthesisExpr(innerExpr);
     }
 
-    NodeExprP innerExpr = this->parseExpr();
+    this->throwSyntaxError("Expression expected");
 
-    if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
-        this->throwSyntaxError("')' expected");
-    }
-
-    return new NodeParenthesisExpr(innerExpr);
+    return nullptr;
 }
 
 NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
@@ -115,34 +92,6 @@ NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
     Token op = this->lexer->currentAndProceedToken();
 
     return parseTerm(leftTerm, op.type);
-    /*NodeExprP currentTerm = parseFactor();
-
-    if (!this->lexer->hasNextToken() ||
-        (this->lexer->currentToken().type != TokenType::mult &&
-         this->lexer->currentToken().type != TokenType::div)) {
-        if (leftSibling == nullptr) {
-            return currentTerm;
-        }
-        if (siblingOpType == TokenType::mult) {
-            return new NodeMultExpr(leftSibling, currentTerm);
-        }
-
-        return new NodeDivExpr(leftSibling, currentTerm);
-    }
-
-    Token op = this->lexer->currentAndProceedToken();
-
-    NodeExprP leftTerm = currentTerm;
-
-    if (leftSibling != nullptr) {
-        if (siblingOpType == TokenType::mult) {
-            leftTerm = new NodeMultExpr(leftSibling, currentTerm);
-        } else {
-            leftTerm = new NodeDivExpr(leftSibling, currentTerm);
-        }
-    }
-
-    return parseTerm(leftTerm, op.type);*/
 }
 
 NodeExpr *Parser::parseNumericExpr(NodeExprP leftSibling, TokenType siblingOpType) {
@@ -171,34 +120,6 @@ NodeExpr *Parser::parseNumericExpr(NodeExprP leftSibling, TokenType siblingOpTyp
     Token op = this->lexer->currentAndProceedToken();
 
     return parseNumericExpr(leftExpr, op.type);
-    /*NodeExprP currentExpr = parseTerm();
-
-    if (!this->lexer->hasNextToken() ||
-        (this->lexer->currentToken().type != TokenType::plus &&
-         this->lexer->currentToken().type != TokenType::minus)) {
-        if (leftSibling == nullptr) {
-            return currentExpr;
-        }
-        if (siblingOpType == TokenType::plus) {
-            return new NodeAddExpr(leftSibling, currentExpr);
-        }
-
-        return new NodeSubExpr(leftSibling, currentExpr);
-    }
-
-    Token op = this->lexer->currentAndProceedToken();
-
-    NodeExprP leftExpr = currentExpr;
-
-    if (leftSibling != nullptr) {
-        if (siblingOpType == TokenType::plus) {
-            leftExpr = new NodeAddExpr(leftSibling, currentExpr);
-        } else {
-            leftExpr = new NodeSubExpr(leftSibling, currentExpr);
-        }
-    }
-
-    return parseNumericExpr(leftExpr, op.type);*/
 }
 
 NodeExpr *Parser::parseRelationalExpr(NodeExprP leftSibling, TokenType siblingOpType) {

@@ -19,34 +19,28 @@ bool Lexer::hasBuffer() {
     return nCurIndex < srcCode.size();
 }
 
-std::vector<Token> Lexer::analyseSource() {
+void Lexer::analyseSource() {
     // std::vector<Token> tokens;
 
     while (this->hasBuffer()) {
         char cCur = this->currentAndProceed();
 
-        if (cCur == '+') {
-            this->tokens.push_back(Token(TokenType::plus));
-        } else if (cCur == '-') {
-            this->tokens.push_back(Token(TokenType::minus));
-        } else if (cCur == '*') {
-            this->tokens.push_back(Token(TokenType::mult));
-        } else if (cCur == '/') {
-            this->tokens.push_back(Token(TokenType::div));
-        } else if (cCur == '(') {
-            this->tokens.push_back(Token(TokenType::openParenthesis));
-        } else if (cCur == ')') {
-            this->tokens.push_back(Token(TokenType::closeParenthesis));
-        } else if (cCur == '{') {
-            this->tokens.push_back(Token(TokenType::openCurly));
-        } else if (cCur == '}') {
-            this->tokens.push_back(Token(TokenType::closeCurly));
-        } else if (cCur == '[') {
-            this->tokens.push_back(Token(TokenType::openSquare));
-        } else if (cCur == ']') {
-            this->tokens.push_back(Token(TokenType::closeSquare));
-        } else if (cCur == ',') {
-            this->tokens.push_back(Token(TokenType::coma));
+        if (this->singleTypes.contains(cCur)) {
+            this->tokens.push_back(Token(this->singleTypes[cCur]));
+        } else if (this->doubleTypes.contains(cCur)) {
+            if (this->hasBuffer() && this->current() == cCur) {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(get<1>(this->doubleTypes[cCur])));
+            } else {
+                this->tokens.push_back(Token(get<0>(this->doubleTypes[cCur])));
+            }
+        } else if (this->equalTypes.contains(cCur)) {
+            if (this->hasBuffer() && this->current() == '=') {
+                this->currentAndProceed();
+                this->tokens.push_back(Token(get<1>(this->equalTypes[cCur])));
+            } else {
+                this->tokens.push_back(Token(get<0>(this->equalTypes[cCur])));
+            }
         } else if (cCur == '\'') {
             char innerVal = this->currentAndProceed();
 
@@ -55,48 +49,6 @@ std::vector<Token> Lexer::analyseSource() {
             }
 
             this->tokens.push_back(Token(TokenType::immediateInteger, std::to_string(innerVal)));
-        } else if (cCur == '=') {
-            if (this->hasBuffer() && this->current() == '=') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::doubleEqual));
-            } else {
-                this->tokens.push_back(Token(TokenType::equal));
-            }
-        } else if (cCur == '&') {
-            if (this->hasBuffer() && this->current() == '&') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::logicalAnd));
-            } else {
-                this->tokens.push_back(Token(TokenType::ampersand));
-            }
-        } else if (cCur == '|') {
-            if (this->hasBuffer() && this->current() == '|') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::logicalOr));
-            } else {
-                this->tokens.push_back(Token(TokenType::pipe));
-            }
-        } else if (cCur == '!') {
-            if (this->hasBuffer() && this->current() == '=') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::notEqual));
-            } else {
-                this->tokens.push_back(Token(TokenType::exclamation));
-            }
-        } else if (cCur == '>') {
-            if (this->hasBuffer() && this->current() == '=') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::relationalGE));
-            } else {
-                this->tokens.push_back(Token(TokenType::relationalG));
-            }
-        } else if (cCur == '<') {
-            if (this->hasBuffer() && this->current() == '=') {
-                this->currentAndProceed();
-                this->tokens.push_back(Token(TokenType::relationalLE));
-            } else {
-                this->tokens.push_back(Token(TokenType::relationalL));
-            }
         } else if (std::isdigit(cCur)) {
             std::string buffer(1, cCur);
 
@@ -115,29 +67,11 @@ std::vector<Token> Lexer::analyseSource() {
                 buffer.push_back(this->currentAndProceed());
             }
 
-            if (buffer == "exit") {
-                this->tokens.push_back(Token(TokenType::exit));
-            } else if (buffer == "int") {
-                this->tokens.push_back(Token(TokenType::intKeyword));
-            } else if (buffer == "char") {
-                this->tokens.push_back(Token(TokenType::charKeyword));
-            } else if (buffer == "void") {
-                this->tokens.push_back(Token(TokenType::voidKeyword));
-            } else if (buffer == "if") {
-                this->tokens.push_back(Token(TokenType::ifKeyword));
-            } else if (buffer == "else") {
-                this->tokens.push_back(Token(TokenType::elseKeyword));
-            } else if (buffer == "while") {
-                this->tokens.push_back(Token(TokenType::whileKeyword));
-            } else if (buffer == "do") {
-                this->tokens.push_back(Token(TokenType::doKeyword));
-            } else if (buffer == "return") {
-                this->tokens.push_back(Token(TokenType::returnKeyword));
+            if (this->keywords.contains(buffer)) {
+                this->tokens.push_back(Token(this->keywords[buffer]));
             } else {
                 this->tokens.push_back(Token(TokenType::identifier, buffer));
             }
-        } else if (cCur == ';') {
-            this->tokens.push_back(Token(TokenType::semiColon));
         } else if (cCur == '\n') {
             this->currentLine++;
             this->tokens.push_back(Token(TokenType::NEW_LINE));
@@ -153,19 +87,23 @@ std::vector<Token> Lexer::analyseSource() {
 
     this->countLines();
 
-    return this->tokens;
+    // return this->tokens;
 }
 
 bool Lexer::hasNextToken() {
-    return nTokenIndex < tokens.size();
+//    return nTokenIndex < tokens.size();
+    return !this->tokens.empty();
 }
 
 Token Lexer::currentToken() {
-    return this->tokens[nTokenIndex];
+//    return this->tokens[nTokenIndex];
+    return this->tokens.front();
 }
 
 Token Lexer::currentAndProceedToken() {
-    Token ret =  this->tokens[nTokenIndex++];
+//    Token ret =  this->tokens[nTokenIndex++];
+    Token ret = this->tokens.front();
+    this->tokens.pop_front();
 
     this->countLines();
 
@@ -173,9 +111,11 @@ Token Lexer::currentAndProceedToken() {
 }
 
 void Lexer::countLines() {
-    while (this->hasNextToken() && this->tokens[nTokenIndex].type == TokenType::NEW_LINE) {
+//    while (this->hasNextToken() && this->tokens[nTokenIndex].type == TokenType::NEW_LINE) {
+    while (this->hasNextToken() && this->tokens.front().type == TokenType::NEW_LINE) {
         this->currentLine++;
-        nTokenIndex++;
+//        nTokenIndex++;
+        this->tokens.pop_front();
     }
 }
 

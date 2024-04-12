@@ -5,8 +5,10 @@
 
 #include <string>
 #include <utility>
-#include <vector>
+#include <tuple>
+#include <list>
 #include <iostream>
+#include <unordered_map>
 #include "errorHandling.h"
 
 enum class TokenType {
@@ -54,17 +56,6 @@ std::string getTokenName(TokenType tokenType);
 struct Token {
     TokenType type;
     std::string val;
-    int line;
-
-    /*Token(TokenType type, int line) {
-        this->type = type;
-        this->line = line;
-    }
-
-    Token(TokenType type, std::string value, int line) : val(std::move(value)) {
-        this->type = type;
-        this->line = line;
-    }*/
 };
 
 class Lexer {
@@ -73,10 +64,46 @@ public:
 
     explicit Lexer(std::string& src) :
     srcCode(std::move(src)) {
+        keywords = {
+                {"int", TokenType::intKeyword},
+                {"char", TokenType::charKeyword},
+                {"void", TokenType::voidKeyword},
+                {"if", TokenType::ifKeyword},
+                {"else", TokenType::elseKeyword},
+                {"while", TokenType::whileKeyword},
+                {"do", TokenType::doKeyword},
+                {"return", TokenType::returnKeyword},
+        };
 
+        singleTypes = {
+                {'+', TokenType::plus},
+                {'-', TokenType::minus},
+                {'*', TokenType::mult},
+                {'/', TokenType::div},
+                {'(', TokenType::openParenthesis},
+                {')', TokenType::closeParenthesis},
+                {'{', TokenType::openCurly},
+                {'}', TokenType::closeCurly},
+                {'[', TokenType::openSquare},
+                {']', TokenType::closeSquare},
+                {',', TokenType::coma},
+                {';', TokenType::semiColon}
+        };
+
+        doubleTypes = {
+                {'=', {TokenType::equal, TokenType::doubleEqual}},
+                {'&', {TokenType::ampersand, TokenType::logicalAnd}},
+                {'|', {TokenType::pipe, TokenType::logicalOr}},
+        };
+
+        equalTypes = {
+                {'!', {TokenType::exclamation, TokenType::notEqual}},
+                {'>', {TokenType::relationalG, TokenType::relationalGE}},
+                {'<', {TokenType::relationalL, TokenType::relationalLE}},
+        };
     }
 
-    std::vector<Token> analyseSource();
+    void analyseSource();
     bool hasNextToken();
     Token currentToken();
     Token currentAndProceedToken();
@@ -85,9 +112,15 @@ private:
     void throwLexerError(const std::string &errorMsg) const;
 
     int nCurIndex = 0;
-    int nTokenIndex = 0;
+//    int nTokenIndex = 0;
     std::string srcCode;
-    std::vector<Token> tokens;
+//    std::vector<Token> tokens;
+    std::list<Token> tokens;
+
+    std::unordered_map<std::string , TokenType> keywords;
+    std::unordered_map<char, TokenType> singleTypes;
+    std::unordered_map<char, std::tuple<TokenType, TokenType>> doubleTypes;
+    std::unordered_map<char, std::tuple<TokenType, TokenType>> equalTypes;
 
     char current();
     char currentAndProceed();

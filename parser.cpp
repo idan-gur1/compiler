@@ -55,7 +55,14 @@ std::variant<std::vector<NodeExpr *>, std::vector<Variable>> Parser::parseParent
                                         this->typeMap[varTypeKeyword], varPtr));
         }
 
-        if (this->checkForTokenType(TokenType::coma)) this->lexer->currentAndProceedToken();
+        if (this->checkForTokenType(TokenType::coma)) {
+            this->lexer->currentAndProceedToken();
+
+            if (this->checkForTokenType(TokenType::closeParenthesis)) {
+                if (vars) this->throwSyntaxError("Expected parameter declaration");
+                this->throwSyntaxError("Expression expected");
+            }
+        }
     }
 
     this->lexer->currentAndProceedToken();
@@ -63,6 +70,30 @@ std::variant<std::vector<NodeExpr *>, std::vector<Variable>> Parser::parseParent
     if (vars) return varsList;
 
     return exprList;
+}
+
+void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func) {
+    if (params.size() != func->params.size()) {
+        for (auto &expr : params) {
+            delete expr;
+        }
+
+        this->throwSemanticError("Function '" + func->name + "' expected " + std::to_string(func->params.size()) + " parameters");
+    }
+
+    for (int i = 0; i < params.size(); ++i) {
+        auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
+
+        if (func->params[i].ptrType && !exprAddr ||
+            !func->params[i].ptrType && exprAddr ||
+            (exprAddr && func->params[i].type != exprAddr->target.type)) {
+            for (auto &expr: params) {
+                delete expr;
+            }
+
+            this->throwSemanticError("Function call with incompatible type");
+        }
+    }
 }
 
 std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
@@ -77,19 +108,17 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
 
     if (firstToken.type == TokenType::identifier) {
         stmt = this->stmtByIdentifier(this->lexer->currentAndProceedToken());
-    } else if (firstToken.type == TokenType::intKeyword) {
-        stmt = this->stmtVariableDeclaration(VariableType::intType);
-    } else if (firstToken.type == TokenType::charKeyword) {
-        stmt = this->stmtVariableDeclaration(VariableType::charType);
+    } else if (firstToken.type == TokenType::intKeyword || firstToken.type == TokenType::charKeyword) {
+        stmt = this->stmtVariableDeclaration(this->typeMap[firstToken.type]);
     } else if (firstToken.type == TokenType::ifKeyword) {
         stmt = this->stmtIf();
-        return {stmt, true};
+        // return {stmt, true};
     } else if (firstToken.type == TokenType::whileKeyword) {
         stmt = this->stmtWhile();
-        return {stmt, true};
+        // return {stmt, true};
     } else if (firstToken.type == TokenType::doKeyword) {
         stmt = this->stmtWhile(true);
-        return {stmt, true};
+        // return {stmt, true};
     } else if (firstToken.type == TokenType::returnKeyword) {
         this->lexer->currentAndProceedToken();
 
@@ -100,7 +129,7 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         }
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
-        return {stmt, true}; // prevent the need for stmt delimiter;
+        // return {stmt, true}; // prevent the need for stmt delimiter;
     } else if (firstToken.type == TokenType::semiColon) {
         // Ignore
     } else {
@@ -182,15 +211,13 @@ ProgramTree *Parser::parseProgram() {
 }
 
 void Parser::throwSyntaxError(const std::string &errorMsg) {
-    /*std::cout << "Parser Error [Syntax Error]: " << errorMsg << std::endl;
-    exit(1);*/
+    delete this->programTree;
     throw CompilationException(
             "[Parser - Syntax Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 void Parser::throwSemanticError(const std::string &errorMsg) {
-    /*std::cout << "Parser Error [Semantic Error]: " << errorMsg << std::endl;
-    exit(1);*/
+    delete this->programTree;
     throw CompilationException(
             "[Parser - Semantic Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }

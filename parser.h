@@ -7,6 +7,7 @@
 #include <stack>
 #include <optional>
 #include <variant>
+#include <vector>
 #include <unordered_map>
 #include "treeNodes.h"
 #include "lexer.h"
@@ -22,7 +23,7 @@ public:
     }
 
     ~Parser() {
-
+        delete programTree;
     }
 
     ProgramTree *parseProgram();
@@ -59,6 +60,7 @@ private:
     bool checkForTokenTypeAndConsume(TokenType type);
     void stmtDelimiterTokenExists();
     void identifierTokenExists();
+    void validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func);
 
     void throwSyntaxError(const std::string& errorMsg);
     void throwSemanticError(const std::string& errorMsg);
@@ -73,7 +75,6 @@ private:
     NodeStmt *stmtWhile(bool isDo = false);
 
     Lexer *lexer;
-//    std::unordered_set<std::string> variables;
     std::stack<NodeScopeP> scopes;
     ProgramTreeP programTree;
 

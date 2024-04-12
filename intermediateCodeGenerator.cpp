@@ -2,7 +2,7 @@
 // Created by idang on 24/12/2023.
 //
 
-/*#include <fstream>
+#include <fstream>
 #include "intermediateCodeGenerator.h"
 #include "lexer.h"
 
@@ -18,26 +18,12 @@ std::string uniExprToStr(UniExpr *uniExpr) {
 std::string ilStmtToStr(ThreeAddressStmt *taStmt) {
     std::stringstream strStream;
 
-    if (auto tempTAS = dynamic_cast<TempAssignmentTAStmtP>(taStmt)) {
-        strStream << "temp" << tempTAS->id << " := ";
-    } else if (auto varTAS = dynamic_cast<VarAssignmentTAStmtP>(taStmt)) {
-        strStream << varTAS->targetIdent << " = ";
-    }
 
-    if (auto binExpr = dynamic_cast<BinaryExprP>(taStmt->expr)) {
-        strStream << uniExprToStr(binExpr->left)
-                  << " " << getTokenName(binExpr->op) << " "
-                  << uniExprToStr(binExpr->right);
-    } else if (auto uniExpr = dynamic_cast<UniExprP>(taStmt->expr)) {
-        strStream << uniExprToStr(uniExpr);
-    }
-
-    strStream << std::endl;
 
     return strStream.str();
 }
 
-void ILGenerator::generateExprIL(NodeExprP expr) {
+/*void ILGenerator::generateExprIL(NodeExprP expr) {
     if (auto binExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
         TokenType op = TokenType::NO_TOKEN;
         if (auto divExpr = dynamic_cast<NodeDivExprP>(binExpr)) {
@@ -58,8 +44,8 @@ void ILGenerator::generateExprIL(NodeExprP expr) {
 //            this->ilStmts.push_back(new ThreeAddressStmt("t" + std::to_string(++currentTemp),
 //                                                     new BinaryExpr(lhs->val, rhs->val, op)));
             this->ilStmts.push_back(new TempAssignmentTAStmt(++currentTemp,
-                                                             new BinaryExpr(new UniVal(lhs->val),
-                                                                            new UniVal(rhs->val), op)));
+                                                             BinaryExpr(UniVal(lhs->val),
+                                                             UniVal(rhs->val), op)));
 
             if (currentTemp > this->maxTemp) this->maxTemp = currentTemp;
         } else if (lhs) {
@@ -116,7 +102,7 @@ void ILGenerator::generateExprIL(NodeExprP expr) {
 //        this->ilStmts.push_back(new ThreeAddressStmt("t" + std::to_string(++currentTemp),
 //                                                     new UniVal(terminalExpr->val)));
     }
-}
+}*/
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {
     if (auto assignmentStmt = dynamic_cast<NodeAssignmentStmtP>(stmt)) {
@@ -140,19 +126,34 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
 }
 
 void ILGenerator::generateScopeIL(NodeScopeP scope) {
-    for (std::string var : scope->vars) {
+    int scopeId = this->currentScopeId++;
 
+    this->ilStmts.push_back(new ScopeDeclarationStmt(scopeId, scope->vars));
+
+    for (NodeStmtP stmt : scope->stmts) {
+        this->generateStmtIL(stmt);
     }
-    for (NodeStmtP naStmt: scope->stmts) {
-        generateStmtIL(naStmt);
-    }
+
+    this->ilStmts.push_back(new ScopeExitStmt(scopeId));
+}
+
+void ILGenerator::generateFunctionIL(NodeFunctionP function) {
+    auto funcDecStmt = new FunctionDeclarationStmt(function->name, function->params);
+    this->maxTemp = 0;
+    this->currentFunctionName = function->name;
+
+    this->ilStmts.push_back(funcDecStmt);
+    this->generateScopeIL(function->scope);
+    this->ilStmts.push_back(new FunctionExitStmt(function->name));
+
+    funcDecStmt->maxTemp = this->maxTemp;
+
 }
 
 void ILGenerator::generateProgramIL() {
-//    for (NodeAssignmentStmtP naStmt: this->program->stmts) {
-//        generateStmtIL(naStmt);
-//    }
-    generateScopeIL(this->program);
+    for (auto funcPtr : this->program->functions) {
+        this->generateFunctionIL(funcPtr);
+    }
 
     std::ofstream outFile(this->outfileName);
 
@@ -168,4 +169,4 @@ void ILGenerator::generateProgramIL() {
 
     outFile.close();
 
-}*/
+}

@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     try {
         lexer = new Lexer(fileContent);
 
-        std::vector<Token> tokens = lexer->analyseSource();
+        lexer->analyseSource();
 
         parser = new Parser(lexer);
 
@@ -86,9 +86,13 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "compilation finished - cleaning memory" << std::endl;
-    delete program;
+
     delete parser;
     delete lexer;
+
+    if (program == nullptr) return 1;
+
+    delete program;
 
     return 0;
 }

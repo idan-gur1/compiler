@@ -66,28 +66,7 @@ NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
 
         std::vector<NodeExprP> params = std::get<std::vector<NodeExprP>>(parseParenthesisExprList(false));
 
-        if (params.size() != func->params.size()) {
-            for (auto &expr: params) {
-                delete expr;
-            }
-
-            this->throwSemanticError(
-                    "Function '" + ident.val + "' expected " + std::to_string(func->params.size()) + " parameters");
-        }
-
-        for (int i = 0; i < params.size(); ++i) {
-            auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
-
-            if (func->params[i].ptrType && !exprAddr ||
-                !func->params[i].ptrType && exprAddr ||
-                (exprAddr && func->params[i].type != exprAddr->target.type)) {
-                for (auto &expr: params) {
-                    delete expr;
-                }
-
-                this->throwSemanticError("Function call with incompatible type");
-            }
-        }
+        validateFunctionCallParams(params, func);
 
         return new NodeFunctionCall(ident.val, params);
     }
@@ -118,7 +97,7 @@ NodeStmt *Parser::stmtVariableDeclaration(VariableType type) {
 
 
     if (checkForTokenType(TokenType::openSquare)) {
-        if (ptr) this->throwSemanticError("Arrays can only be of primitive types");
+        if (ptr) this->throwSemanticError("Arrays can't be of type pointers");
 
         auto sizeExpr = dynamic_cast<NodeImIntTerminalP>(parseArrayBrackets());
 
@@ -163,7 +142,7 @@ NodeStmt *Parser::stmtIf() {
 NodeStmt *Parser::stmtWhile(bool isDo) {
     this->lexer->currentAndProceedToken(); // Remove the 'while' or 'do' lexeme
 
-    NodeExprP expr = nullptr;
+    NodeExprP expr;
 
     if (!isDo) {
         expr = parseParenthesisExpr();

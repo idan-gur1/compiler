@@ -106,9 +106,18 @@ class FunctionDeclarationStmt : public ThreeAddressStmt {
 public:
     std::string funcName;
     std::vector<Variable> params;
+    int maxTemp = 0;
 
     FunctionDeclarationStmt(std::string funcName, std::vector<Variable> params) : funcName(std::move(funcName)) {
         this->params = std::move(params);
+    }
+};
+
+class SetFunctionReturnValStmt : public ThreeAddressStmt {
+public:
+    UniExpr expr;
+
+    explicit SetFunctionReturnValStmt(const UniExpr& expr) : expr(expr) {
     }
 };
 
@@ -117,6 +126,26 @@ public:
     std::string funcName;
 
     explicit FunctionExitStmt(std::string funcName) : funcName(std::move(funcName)) {
+    }
+};
+
+class ScopeDeclarationStmt : public ThreeAddressStmt {
+public:
+    int scopeId;
+    std::vector<Variable> vars;
+
+    ScopeDeclarationStmt(int scopeId, std::vector<Variable> vars) {
+        this->scopeId = scopeId;
+        this->vars = std::move(vars);
+    }
+};
+
+class ScopeExitStmt : public ThreeAddressStmt {
+public:
+    int scopeId;
+
+    explicit ScopeExitStmt(int scopeId) {
+        this->scopeId = scopeId;
     }
 };
 
@@ -154,6 +183,19 @@ public:
     }
 };
 
+class FunctionCall : public UniExpr, public ThreeAddressStmt{
+public:
+    std::string funcName;
+    std::vector<UniExpr> params;
+
+    explicit FunctionCall(std::string funcName, std::vector<UniExpr> params) {
+        this->funcName = std::move(funcName);
+        this->params = std::move(params);
+    }
+
+    ~FunctionCall() override = default;
+};
+
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
 typedef UniVal *UniValP;
@@ -168,10 +210,8 @@ std::string ilStmtToStr(ThreeAddressStmt *taStmt);
 class ILGenerator {
 public:
     std::vector<ThreeAddressStmt *> ilStmts;
-    int maxTemp = 0;
-    int declarations = 0;
 
-    ILGenerator(NodeScopeP program, std::string outfileName) {
+    ILGenerator(ProgramTreeP program, std::string outfileName) {
         this->program = program;
         this->outfileName= std::move(outfileName);
     }
@@ -184,14 +224,18 @@ public:
     }
 
     void generateProgramIL();
+    void generateFunctionIL(NodeFunctionP function);
     void generateScopeIL(NodeScopeP scope);
     void generateStmtIL(NodeStmtP stmt);
     void generateExprIL(NodeExprP expr);
 
 private:
-    NodeScopeP program;
+    ProgramTreeP program;
     std::string outfileName;
+    std::string currentFunctionName;
+    int currentScopeId = 0;
     int currentTemp = 0;
+    int maxTemp = 0;
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H
