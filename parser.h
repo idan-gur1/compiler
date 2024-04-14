@@ -22,9 +22,7 @@ public:
         this->typeMap[TokenType::voidKeyword] = VariableType::voidType;
     }
 
-    ~Parser() {
-        delete programTree;
-    }
+    ~Parser() = default;
 
     ProgramTree *parseProgram();
     NodeFunction *tryParseFunction();
@@ -44,10 +42,13 @@ private:
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
-    NodeExpr *parseFactor();
+    NodeExpr *parseFactor(bool ptrNotAllowed = false);
     NodeExpr *parseArrayBrackets();
     NodeExpr *parseParenthesisExpr();
-    std::variant<std::vector<NodeExpr *>, std::vector<Variable>> parseParenthesisExprList(bool vars);
+//    std::variant<std::vector<NodeExpr *>, std::vector<Variable>> parseParenthesisExprList(bool vars);
+    std::vector<Variable> parseParenthesisVariableList();
+    std::vector<NodeExpr *> parseParenthesisExprList();
+    void checkPointerUsage(NodeExprP expr);
 
     std::optional<Variable> varExistsCurrentScope(const std::string&);
     std::optional<Variable> varExistsScopeStack(const std::string&);
@@ -58,7 +59,7 @@ private:
 
     bool checkForTokenType(TokenType type);
     bool checkForTokenTypeAndConsume(TokenType type);
-    void stmtDelimiterTokenExists();
+    bool checkForTokenTypeAndConsumeIfYes(TokenType type);
     void identifierTokenExists();
     void validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func);
 
@@ -76,9 +77,11 @@ private:
 
     Lexer *lexer;
     std::stack<NodeScopeP> scopes;
-    ProgramTreeP programTree;
+    ProgramTreeP programTree = nullptr;
 
     std::unordered_map<TokenType, VariableType> typeMap;
+
+    bool ptrUsedInExpr = false;
 };
 
 #endif //COMPILER_PARSER_H

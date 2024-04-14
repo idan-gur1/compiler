@@ -79,20 +79,18 @@ int main(int argc, char *argv[]) {
 
         parser = new Parser(lexer);
 
-
         program = parser->parseProgram();
+
+
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
     }
 
-    std::cout << "compilation finished - cleaning memory" << std::endl;
-
-    delete parser;
-    delete lexer;
-
-    if (program == nullptr) return 1;
+    std::cout << "Compilation finished - cleaning memory" << std::endl;
 
     delete program;
+    delete parser;
+    delete lexer;
 
     return 0;
 }

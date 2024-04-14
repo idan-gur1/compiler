@@ -30,55 +30,63 @@ NodeExpr *Parser::parseParenthesisExpr() {
     return innerExpr;
 }
 
-std::variant<std::vector<NodeExpr *>, std::vector<Variable>> Parser::parseParenthesisExprList(bool vars) {
+std::vector<Variable> Parser::parseParenthesisVariableList() {
+    if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
+        this->throwSyntaxError("'(' expected");
+    }
+
+    std::vector<Variable> varsList;
+
+    while (!this->checkForTokenTypeAndConsumeIfYes(TokenType::closeParenthesis)) {
+        TokenType varTypeKeyword = this->lexer->currentAndProceedToken().type;
+        if (varTypeKeyword == TokenType::voidKeyword || !this->typeMap.contains(varTypeKeyword)) {
+            this->throwSyntaxError("Valid parameter type expected");
+        }
+
+        bool varPtr = checkForTokenType(TokenType::mult);
+        if (varPtr) this->lexer->currentAndProceedToken();
+
+        identifierTokenExists();
+
+        varsList.push_back(Variable(this->lexer->currentAndProceedToken().val,
+                                    this->typeMap[varTypeKeyword], varPtr));
+
+        if (this->checkForTokenTypeAndConsumeIfYes(TokenType::coma) &&
+            this->checkForTokenType(TokenType::closeParenthesis)) {
+            this->throwSyntaxError("Expected parameter declaration");
+        }
+    }
+
+    return varsList;
+}
+
+std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
     if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
         this->throwSyntaxError("'(' expected");
     }
 
     std::vector<NodeExpr *> exprList;
-    std::vector<Variable> varsList;
 
-    while (!this->checkForTokenType(TokenType::closeParenthesis)) {
-        if (!vars) exprList.push_back(parseExpr());
-        else {
-            TokenType varTypeKeyword = this->lexer->currentAndProceedToken().type;
-            if (varTypeKeyword == TokenType::voidKeyword || !this->typeMap.contains(varTypeKeyword)) {
-                this->throwSyntaxError("Valid type expected");
-            }
+    while (!this->checkForTokenTypeAndConsumeIfYes(TokenType::closeParenthesis)) {
+        exprList.push_back(parseExpr());
 
-            bool varPtr = checkForTokenType(TokenType::mult);
-            if (varPtr) this->lexer->currentAndProceedToken();
-
-            identifierTokenExists();
-
-            varsList.push_back(Variable(this->lexer->currentAndProceedToken().val,
-                                        this->typeMap[varTypeKeyword], varPtr));
-        }
-
-        if (this->checkForTokenType(TokenType::coma)) {
-            this->lexer->currentAndProceedToken();
-
-            if (this->checkForTokenType(TokenType::closeParenthesis)) {
-                if (vars) this->throwSyntaxError("Expected parameter declaration");
-                this->throwSyntaxError("Expression expected");
-            }
+        if (this->checkForTokenTypeAndConsumeIfYes(TokenType::coma) &&
+            this->checkForTokenType(TokenType::closeParenthesis)) {
+            this->throwSyntaxError("Expression expected");
         }
     }
-
-    this->lexer->currentAndProceedToken();
-
-    if (vars) return varsList;
 
     return exprList;
 }
 
 void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func) {
     if (params.size() != func->params.size()) {
-        for (auto &expr : params) {
+        for (auto &expr: params) {
             delete expr;
         }
 
-        this->throwSemanticError("Function '" + func->name + "' expected " + std::to_string(func->params.size()) + " parameters");
+        this->throwSemanticError(
+                "Function '" + func->name + "' expected " + std::to_string(func->params.size()) + " parameters");
     }
 
     for (int i = 0; i < params.size(); ++i) {
@@ -86,7 +94,7 @@ void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunct
 
         if (func->params[i].ptrType && !exprAddr ||
             !func->params[i].ptrType && exprAddr ||
-            (exprAddr && func->params[i].type != exprAddr->target.type)) {
+            (exprAddr && func->params[i].type != exprAddr->target->variable.type)) {
             for (auto &expr: params) {
                 delete expr;
             }
@@ -103,6 +111,7 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
 
     NodeStmt *stmt = nullptr;
     bool tryAgain = true;
+    bool delimiterIgnore = false;
 
     Token firstToken = this->lexer->currentToken();
 
@@ -112,13 +121,12 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         stmt = this->stmtVariableDeclaration(this->typeMap[firstToken.type]);
     } else if (firstToken.type == TokenType::ifKeyword) {
         stmt = this->stmtIf();
-        // return {stmt, true};
+        delimiterIgnore = true;
     } else if (firstToken.type == TokenType::whileKeyword) {
         stmt = this->stmtWhile();
-        // return {stmt, true};
+        delimiterIgnore = true;
     } else if (firstToken.type == TokenType::doKeyword) {
         stmt = this->stmtWhile(true);
-        // return {stmt, true};
     } else if (firstToken.type == TokenType::returnKeyword) {
         this->lexer->currentAndProceedToken();
 
@@ -129,14 +137,16 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         }
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
-        // return {stmt, true}; // prevent the need for stmt delimiter;
+        delimiterIgnore = true;
     } else if (firstToken.type == TokenType::semiColon) {
         // Ignore
     } else {
         tryAgain = false;
     }
 
-    this->stmtDelimiterTokenExists();
+    if (!delimiterIgnore && !checkForTokenTypeAndConsume(TokenType::semiColon)) {
+        this->throwSyntaxError("';' expected");
+    };
 
     return {stmt, tryAgain};
 }
@@ -191,7 +201,9 @@ NodeFunction *Parser::tryParseFunction() {
     identifierTokenExists();
     std::string funcName = this->lexer->currentAndProceedToken().val;
 
-    std::vector<Variable> funcParams = std::get<std::vector<Variable>>(parseParenthesisExprList(true));
+    if (getFunction(funcName)) this->throwSemanticError("Redeclaration of the function '" + funcName + "'");
+
+    auto funcParams = parseParenthesisVariableList();
 
     auto function = new NodeFunction(funcType, ptr, funcName, funcParams);
 
@@ -230,10 +242,12 @@ bool Parser::checkForTokenTypeAndConsume(TokenType type) {
     return this->lexer->hasNextToken() && this->lexer->currentAndProceedToken().type == type;
 }
 
-void Parser::stmtDelimiterTokenExists() {
-    if (!checkForTokenTypeAndConsume(TokenType::semiColon)) {
-        this->throwSyntaxError("';' expected");
-    };
+bool Parser::checkForTokenTypeAndConsumeIfYes(TokenType type) {
+    if (this->lexer->hasNextToken() && this->lexer->currentToken().type == type) {
+        this->lexer->currentAndProceedToken();
+        return true;
+    }
+    return false;
 }
 
 void Parser::identifierTokenExists() {

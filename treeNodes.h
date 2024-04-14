@@ -40,15 +40,6 @@ public:
     virtual ~NodeExpr() = default;
 };
 
-class AddrNodeExpr : public NodeExpr {
-public:
-    Variable target;
-
-    explicit AddrNodeExpr(Variable target) : target(std::move(target)){}
-
-    ~AddrNodeExpr() override = default;
-};
-
 class BinaryNodeExpr : public NodeExpr {
 public:
     NodeExpr *left;
@@ -218,6 +209,19 @@ public:
         delete index;
     }
 };
+
+class AddrNodeExpr : public NodeExpr {
+public:
+    NodeVariableTerminal *target;
+
+    explicit AddrNodeExpr(NodeVariableTerminal *target) {
+        this->target = target;
+    }
+
+    ~AddrNodeExpr() override {
+        delete target;
+    }
+};
 //endregion
 
 //region Statement nodes
@@ -244,12 +248,15 @@ public:
 class NodePointerAddrAssignmentStmt : public NodeStmt {
 public:
     Variable pointer;
-    Variable variable;
+    AddrNodeExpr *addressable;
 
-    NodePointerAddrAssignmentStmt(Variable ptr, Variable var) : pointer(std::move(ptr)), variable(std::move(var)) {
+    NodePointerAddrAssignmentStmt(Variable ptr, AddrNodeExpr *addressable) : pointer(std::move(ptr)) {
+        this->addressable = addressable;
     }
 
-    ~NodePointerAddrAssignmentStmt() override = default;
+    ~NodePointerAddrAssignmentStmt() override {
+        delete addressable;
+    };
 };
 
 class NodePointerValueAssignmentStmt : public NodeStmt {
@@ -346,21 +353,6 @@ public:
         delete expr;
     }
 };
-
-class NodeFunctionCall : public TerminalNodeExpr, public NodeStmt{
-public:
-    std::string funcName;
-    std::vector<NodeExpr *> params;
-    NodeFunctionCall(std::string funcName, std::vector<NodeExpr *> params) : funcName(std::move(funcName)) {
-        this->params = std::move(params);
-    }
-
-    ~NodeFunctionCall() override {
-        for (auto &param : params) {
-            delete param;
-        }
-    }
-};
 //endregion
 
 class NodeFunction {
@@ -381,6 +373,22 @@ public:
 
     ~NodeFunction() {
         delete scope;
+    }
+};
+
+class NodeFunctionCall : public TerminalNodeExpr, public NodeStmt{
+public:
+    NodeFunction *function;
+    std::vector<NodeExpr *> params;
+    NodeFunctionCall(NodeFunction *function, std::vector<NodeExpr *> params) {
+        this->function = function;
+        this->params = std::move(params);
+    }
+
+    ~NodeFunctionCall() override {
+        for (auto &param : params) {
+            delete param;
+        }
     }
 };
 

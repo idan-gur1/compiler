@@ -14,11 +14,34 @@ int calc(int a, int b) {
     return a * b / (a + b);
 }
 
+int *getItem(int *arr) {
+    return &arr[2];
+}
+
+int fib(int n) {
+    if (n < 2) {
+        return 1;
+    }
+
+    return fib(n - 1) + fib(n - 2);
+}
+
 int main() {
+    int intArr[12];
+    int *cell = getItem(intArr);
+
     int val = 14;
     char arr[4];
 
-    check(&arr, 12);
+    char *ptr = arr;
+    check(ptr, 12);
+
+    int fibNum = fib(4);
+
+    do {
+        arr[0] = arr[0] + 12;
+        val = val - 1;
+    } while (val > 5);
 
     arr[2] = calc(arr[0], arr[1]);
 

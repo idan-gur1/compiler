@@ -14,9 +14,10 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     NodeExpr *innerExpr = this->parseExpr();
 
     auto *ptr = dynamic_cast<AddrNodeExpr *>(innerExpr);
+    auto *func = dynamic_cast<NodeFunctionCall *>(innerExpr);
 
     if (!var.ptrType) {
-        if (ptr) {
+        if (ptr || (func && func->function->returnPtr)) {
             delete innerExpr;
 
             this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
@@ -24,31 +25,26 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
         return new NodePrimitiveAssignmentStmt(var, innerExpr);
     }
 
-    if (!ptr) this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+    if (!ptr && !(func && func->function->returnPtr)) {
+        delete innerExpr;
+        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+    }
 
-    Variable targetVar = ptr->target;
+    if ((ptr && ptr->target->variable.type != var.type) || (func && func->function->returnType != var.type)) {
+        this->throwSemanticError("Incompatible pointer type assignment to '" + var.name + "'");
+    }
 
-    delete innerExpr;
-
-    return new NodePointerAddrAssignmentStmt(var, targetVar);
+    return new NodePointerAddrAssignmentStmt(var, ptr);
 }
 
 NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
-    /*this->lexer->currentAndProceedToken(); // Remove the open square bracket lexeme
-
-    NodeExprP indexExpr = this->parseExpr();
-
-    if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
-        this->throwError("[Syntax Error] ']' expected");
-    }*/
     if (var.arrSize == 0 && !var.ptrType) {
         this->throwSemanticError("'" + var.name + "' is not subscriptable");
     }
 
     NodeExprP indexExpr = this->parseArrayBrackets();
 
-    if (checkForTokenType(TokenType::equal)) {
-        this->lexer->currentAndProceedToken();
+    if (checkForTokenTypeAndConsumeIfYes(TokenType::equal)) {
         return new NodeArrayAssignmentStmt(var, indexExpr, this->parseExpr());
     }
 
@@ -64,11 +60,11 @@ NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
             this->throwSemanticError("Use of undeclared function '" + ident.val + "'");
         }
 
-        std::vector<NodeExprP> params = std::get<std::vector<NodeExprP>>(parseParenthesisExprList(false));
+        std::vector<NodeExprP> params = parseParenthesisExprList();
 
         validateFunctionCallParams(params, func);
 
-        return new NodeFunctionCall(ident.val, params);
+        return new NodeFunctionCall(func, params);
     }
 
     Variable var = this->getVarScopeStack(ident.val);
@@ -130,9 +126,7 @@ NodeStmt *Parser::stmtIf() {
     NodeScopeP ifBlock = parseScope();
     NodeScopeP elseBlock = nullptr;
 
-    if (this->checkForTokenType(TokenType::elseKeyword)) {
-        this->lexer->currentAndProceedToken(); // Remove the 'else' lexeme
-
+    if (this->checkForTokenTypeAndConsumeIfYes(TokenType::elseKeyword)) { // Remove the 'else' lexeme
         elseBlock = parseScope();
     }
 
@@ -151,6 +145,10 @@ NodeStmt *Parser::stmtWhile(bool isDo) {
     NodeScopeP codeBlock = parseScope();
 
     if (isDo) {
+        if (!this->checkForTokenTypeAndConsume(TokenType::whileKeyword)) {
+            this->throwSemanticError("While keyword expected");
+        }
+
         expr = parseParenthesisExpr();
     }
 

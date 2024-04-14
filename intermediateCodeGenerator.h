@@ -66,13 +66,28 @@ public:
     }
 };
 
+enum class ExprOperator {
+    add,
+    sub,
+    mult,
+    div,
+    logicalOr,
+    logicalAnd,
+    equals,
+    notEquals,
+    biggerThan,
+    biggerThanEquals,
+    lessThan,
+    lessThanEquals,
+};
+
 class BinaryExpr : public ThreeAddressExpr{
 public:
     UniExpr left;
     UniExpr right;
-    TokenType op;
+    ExprOperator op;
 
-    BinaryExpr(const UniExpr& left,const UniExpr& right, TokenType op) : left(left), right(right), op(op) {
+    BinaryExpr(const UniExpr& left, const UniExpr& right, ExprOperator op) : left(left), right(right), op(op) {
     }
 
     ~BinaryExpr() override = default;

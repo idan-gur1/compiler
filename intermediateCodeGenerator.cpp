@@ -7,11 +7,11 @@
 #include "lexer.h"
 
 std::string uniExprToStr(UniExpr *uniExpr) {
-    if (auto val = dynamic_cast<UniValP>(uniExpr)) {
-        return val->val.val;
-    } else if (auto temp = dynamic_cast<UniTempP>(uniExpr)) {
-        return "temp" + std::to_string(temp->id);
-    }
+//    if (auto val = dynamic_cast<UniValP>(uniExpr)) {
+//        return val->val.val;
+//    } else if (auto temp = dynamic_cast<UniTempP>(uniExpr)) {
+//        return "temp" + std::to_string(temp->id);
+//    }
     return "";
 }
 
@@ -105,23 +105,21 @@ std::string ilStmtToStr(ThreeAddressStmt *taStmt) {
 }*/
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {
-    if (auto assignmentStmt = dynamic_cast<NodeAssignmentStmtP>(stmt)) {
-        this->currentTemp = 0;
-        this->generateExprIL(assignmentStmt->expr);
-//    auto tac = new ThreeAddressStmt(stmt->ident.val,
-//                                    new UniExpr(Token(TokenType::tempIdentifier,
-//                                                      "t" + std::to_string(currentTemp))));
-        VarAssignmentTAStmt *tac = nullptr;
-        this->declarations++;
-
-        if (auto terminalExpr = dynamic_cast<TerminalNodeExprP>(assignmentStmt->expr)) {
-            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniVal(terminalExpr->val));
-        } else {
-            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniTemp(currentTemp));
-        }
-
-        this->ilStmts.push_back(tac);
-    }
+//    if (auto assignmentStmt = dynamic_cast<NodeAssignmentStmtP>(stmt)) {
+//        this->currentTemp = 0;
+//        this->generateExprIL(assignmentStmt->expr);
+//
+//        VarAssignmentTAStmt *tac = nullptr;
+//        this->declarations++;
+//
+//        if (auto terminalExpr = dynamic_cast<TerminalNodeExprP>(assignmentStmt->expr)) {
+//            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniVal(terminalExpr->val));
+//        } else {
+//            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniTemp(currentTemp));
+//        }
+//
+//        this->ilStmts.push_back(tac);
+//    }
 
 }
 
