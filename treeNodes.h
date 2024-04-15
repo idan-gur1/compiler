@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_set>
+#include <variant>
 
 #include "lexer.h"
 
@@ -245,20 +246,6 @@ public:
     }
 };
 
-class NodePointerAddrAssignmentStmt : public NodeStmt {
-public:
-    Variable pointer;
-    AddrNodeExpr *addressable;
-
-    NodePointerAddrAssignmentStmt(Variable ptr, AddrNodeExpr *addressable) : pointer(std::move(ptr)) {
-        this->addressable = addressable;
-    }
-
-    ~NodePointerAddrAssignmentStmt() override {
-        delete addressable;
-    };
-};
-
 class NodePointerValueAssignmentStmt : public NodeStmt {
 public:
     Variable pointer;
@@ -390,6 +377,29 @@ public:
             delete param;
         }
     }
+};
+
+class NodePointerAddrAssignmentStmt : public NodeStmt {
+public:
+    Variable pointer;
+//    AddrNodeExpr *addressable;
+    std::variant<NodeFunctionCall *, AddrNodeExpr *> addressable;
+
+    NodePointerAddrAssignmentStmt(Variable ptr, AddrNodeExpr *addressable) : pointer(std::move(ptr)) {
+        this->addressable = addressable;
+    }
+
+    NodePointerAddrAssignmentStmt(Variable ptr, NodeFunctionCall *addressable) : pointer(std::move(ptr)) {
+        this->addressable = addressable;
+    }
+
+    ~NodePointerAddrAssignmentStmt() override {
+        if (holds_alternative<NodeFunctionCall *>(addressable)) {
+            delete get<NodeFunctionCall *>(addressable);
+        } else if (holds_alternative<AddrNodeExpr *>(addressable)) {
+            delete get<AddrNodeExpr *>(addressable);
+        }
+    };
 };
 
 class ProgramTree {

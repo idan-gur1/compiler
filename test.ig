@@ -33,6 +33,8 @@ int main() {
     int val = 14;
     char arr[4];
 
+    arr[val] = val * 12;
+
     char *ptr = arr;
     check(ptr, 12);
 

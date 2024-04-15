@@ -9,6 +9,8 @@ NodeExpr *Parser::parseArrayBrackets() {
 
     NodeExprP indexExpr = this->parseExpr();
 
+    this->checkPointerUsage(indexExpr);
+
     if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
         this->throwSyntaxError("']' expected");
     }
@@ -22,6 +24,8 @@ NodeExpr *Parser::parseParenthesisExpr() {
     }
 
     NodeExprP innerExpr = this->parseExpr();
+
+    this->checkPointerUsage(innerExpr);
 
     if (!this->checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
         this->throwSyntaxError("')' expected");

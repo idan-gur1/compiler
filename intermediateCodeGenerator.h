@@ -198,19 +198,6 @@ public:
     }
 };
 
-class FunctionCall : public UniExpr, public ThreeAddressStmt{
-public:
-    std::string funcName;
-    std::vector<UniExpr> params;
-
-    explicit FunctionCall(std::string funcName, std::vector<UniExpr> params) {
-        this->funcName = std::move(funcName);
-        this->params = std::move(params);
-    }
-
-    ~FunctionCall() override = default;
-};
-
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
 typedef UniVal *UniValP;

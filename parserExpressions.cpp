@@ -31,6 +31,10 @@ NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
             validateFunctionCallParams(params, func);
 
             if (func->returnPtr) {
+                if (ptrNotAllowed) {
+                    this->throwSemanticError("Illegal use of '" + func->name + "'");
+                }
+
                 this->ptrUsedInExpr = true;
             }
 
@@ -70,6 +74,8 @@ NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
         this->lexer->currentAndProceedToken();
 
         NodeExprP innerExpr = this->parseExpr();
+
+        this->checkPointerUsage(innerExpr);
 
         if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
             this->throwSyntaxError("')' expected");
@@ -258,8 +264,6 @@ NodeExpr *Parser::parseLogicalOrExpr(NodeExprP leftSibling) {
 }
 
 NodeExpr *Parser::parseAddrExpr() {
-    this->lexer->currentAndProceedToken(); // Remove the 'ampersand' lexeme
-
     this->identifierTokenExists();
 
     NodeExprP addressable = this->parseFactor(true);
@@ -271,11 +275,13 @@ NodeExpr *Parser::parseAddrExpr() {
         this->throwSemanticError("Unaddressable expression");
     }
 
+    this->ptrUsedInExpr = true;
+
     return new AddrNodeExpr(varTerminal);
 }
 
 NodeExpr *Parser::parseExpr() {
-    if (this->checkForTokenType(TokenType::ampersand)) {
+    if (this->checkForTokenTypeAndConsumeIfYes(TokenType::ampersand)) {
         return this->parseAddrExpr();
     }
 
@@ -287,6 +293,6 @@ NodeExpr *Parser::parseExpr() {
 void Parser::checkPointerUsage(NodeExprP expr) {
     if (this->ptrUsedInExpr) {
         delete expr;
-        this->throwSemanticError("Invalid operation on pointers");
+        this->throwSemanticError("Invalid use of pointers");
     }
 }
