@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <sstream>
+#include <typeindex>
 #include "lexer.h"
 #include "treeNodes.h"
 
@@ -21,11 +22,6 @@ public:
     ~UniExpr() override = default;
 };
 
-class UniVal : public UniExpr{
-public:
-    ~UniVal() override = default;
-};
-
 class ImIntVal : public UniExpr{
 public:
     std::string value;
@@ -35,6 +31,15 @@ public:
     }
 
     ~ImIntVal() override = default;
+};
+
+class UniTemp : public UniExpr{
+public:
+    int id;
+
+    explicit UniTemp(int id) {
+        this->id = id;
+    }
 };
 
 class VariableVal : public UniExpr{
@@ -49,20 +54,14 @@ public:
 
 class SubscriptableVariableVal : public VariableVal{
 public:
-    UniExpr index;
+    UniExpr *index;
 
-    SubscriptableVariableVal(Variable var, const UniExpr& index) : VariableVal(std::move(var)), index(index) {
+    SubscriptableVariableVal(Variable var, UniExpr *index) : VariableVal(std::move(var)) {
+        this->index = index;
     }
 
-    ~SubscriptableVariableVal() override = default;
-};
-
-class UniTemp : public UniExpr{
-public:
-    int id;
-
-    explicit UniTemp(int id) {
-        this->id = id;
+    ~SubscriptableVariableVal() override {
+        delete index;
     }
 };
 
@@ -83,14 +82,19 @@ enum class ExprOperator {
 
 class BinaryExpr : public ThreeAddressExpr{
 public:
-    UniExpr left;
-    UniExpr right;
+    UniExpr *left;
+    UniExpr *right;
     ExprOperator op;
 
-    BinaryExpr(const UniExpr& left, const UniExpr& right, ExprOperator op) : left(left), right(right), op(op) {
+    BinaryExpr(UniExpr *left, UniExpr *right, ExprOperator op) : op(op) {
+        this->left = left;
+        this->right = right;
     }
 
-    ~BinaryExpr() override = default;
+    ~BinaryExpr() override {
+        delete left;
+        delete right;
+    }
 };
 
 class ThreeAddressStmt {
@@ -101,23 +105,35 @@ public:
 class TempAssignmentTAStmt : public ThreeAddressStmt {
 public:
     int id;
-    ThreeAddressExpr expr;
+    ThreeAddressExpr *expr;
 
-    TempAssignmentTAStmt(int id, const ThreeAddressExpr& expr) : expr(expr) {
+    TempAssignmentTAStmt(int id, ThreeAddressExpr *expr) {
         this->id = id;
+        this->expr = expr;
+    }
+
+    ~TempAssignmentTAStmt() override {
+        delete expr;
     }
 };
 
 class VarAssignmentTAStmt : public ThreeAddressStmt {
 public:
-    VariableVal var;
-    ThreeAddressExpr expr;
+    VariableVal *var;
+    ThreeAddressExpr *expr;
 
-    VarAssignmentTAStmt(const VariableVal& var, const ThreeAddressExpr& expr) : var(var), expr(expr) {
+    VarAssignmentTAStmt(VariableVal *var, ThreeAddressExpr *expr) {
+        this->var = var;
+        this->expr = expr;
+    }
+
+    ~VarAssignmentTAStmt() override {
+        delete var;
+        delete expr;
     }
 };
 
-class FunctionDeclarationStmt : public ThreeAddressStmt {
+/*class FunctionDeclarationStmt : public ThreeAddressStmt {
 public:
     std::string funcName;
     std::vector<Variable> params;
@@ -196,11 +212,10 @@ public:
 
     GotoIfNotZeroStmt(std::string labelName, const UniExpr& expr) : labelName(std::move(labelName)), expr(expr) {
     }
-};
+};*/
 
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
-typedef UniVal *UniValP;
 typedef BinaryExpr *BinaryExprP;
 typedef ThreeAddressExpr *ThreeAddressExprP;
 typedef ThreeAddressStmt *ThreeAddressStmtP;
@@ -213,9 +228,23 @@ class ILGenerator {
 public:
     std::vector<ThreeAddressStmt *> ilStmts;
 
-    ILGenerator(ProgramTreeP program, std::string outfileName) {
+    ILGenerator(ProgramTreeP program, std::string outfileName) : outfileName(std::move(outfileName)) {
         this->program = program;
-        this->outfileName= std::move(outfileName);
+
+        exprOperatorMap = {
+                {typeid(NodeAddExpr), ExprOperator::add},
+                {typeid(NodeSubExpr), ExprOperator::sub},
+                {typeid(NodeMultExpr), ExprOperator::mult},
+                {typeid(NodeDivExpr), ExprOperator::div},
+                {typeid(NodeLogicalOrExpr), ExprOperator::logicalOr},
+                {typeid(NodeLogicalAndExpr), ExprOperator::logicalAnd},
+                {typeid(NodeBoolEqualsExpr), ExprOperator::equals},
+                {typeid(NodeBoolNotEqualsExpr), ExprOperator::notEquals},
+                {typeid(NodeBiggerThanExpr), ExprOperator::biggerThan},
+                {typeid(NodeBiggerThanEqualExpr), ExprOperator::biggerThanEquals},
+                {typeid(NodeLessThanExpr), ExprOperator::lessThan},
+                {typeid(NodeLessThanEqualExpr), ExprOperator::lessThanEquals},
+        };
     }
 
     ~ILGenerator() {
@@ -232,8 +261,14 @@ public:
     void generateExprIL(NodeExprP expr);
 
 private:
+    TempAssignmentTAStmt *generateTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
+    void generateBinaryExprIL(BinaryNodeExprP);
+    UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
+
     ProgramTreeP program;
     std::string outfileName;
+
+    std::unordered_map<std::type_index, ExprOperator> exprOperatorMap;
     std::string currentFunctionName;
     int currentScopeId = 0;
     int currentTemp = 0;

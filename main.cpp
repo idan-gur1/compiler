@@ -41,14 +41,16 @@ void printExprTree(NodeExprP expr) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        std::cout << "Enter the file to be compiled." << std::endl;
-        std::cout << "Usage: ./compiler [filename].ig" << std::endl;
+    // TODO REMOVE COMMENT: FOR TESTING PURPOSES
+//    if (argc < 2) {
+//        std::cout << "Enter the file to be compiled." << std::endl;
+//        std::cout << "Usage: ./compiler [filename].ig" << std::endl;
+//
+//        return 1;
+//    }
 
-        return 1;
-    }
-
-    std::ifstream inputFile(argv[1]);
+//    std::ifstream inputFile(argv[1]);
+    std::ifstream inputFile("../testExprGeneration.ig");  // TODO REMOVE: JUST FOR TEST
 
     if (inputFile.fail()) {
         std::cout << "Error with reading the input file." << std::endl;
@@ -71,6 +73,7 @@ int main(int argc, char *argv[]) {
     Lexer *lexer = nullptr;
     Parser *parser = nullptr;
     ProgramTreeP program = nullptr;
+    ILGenerator *generator = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -82,12 +85,18 @@ int main(int argc, char *argv[]) {
         program = parser->parseProgram();
 
 
+        // TODO REMOVE: TESTING CODE
+        generator = new ILGenerator(nullptr, "");
+        generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[0]->scope->stmts[1])->expr);
+
+
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
     }
 
     std::cout << "Compilation finished - cleaning memory" << std::endl;
 
+    delete generator;
     delete program;
     delete parser;
     delete lexer;
