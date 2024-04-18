@@ -26,13 +26,19 @@ UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
     if (auto imInt = dynamic_cast<NodeImIntTerminalP>(terminalExpr)) {
         return new ImIntVal(imInt->value);
     } else if (auto subVar = dynamic_cast<NodeSubscriptableVariableTerminalP>(terminalExpr)) {
-        UniExpr *index;
-
         if (auto innerNum = dynamic_cast<NodeImIntTerminalP>(subVar->index)) {
             return new SubscriptableVariableVal(subVar->variable, new ImIntVal(innerNum->value));
         }
 
-        generateExprIL(subVar);
+        UniExprP innerUni = generateExprIL(subVar->index);
+
+        if (!dynamic_cast<UniTempP>(innerUni)) {
+            if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
+        }
+
+
+        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp,
+                                                         new SubscriptableVariableVal(subVar->variable, innerUni)));
 
         return new UniTemp(this->currentTemp);
     } else if (auto var = dynamic_cast<NodeVariableTerminalP>(terminalExpr)) {
@@ -42,7 +48,7 @@ UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
     return nullptr;
 }
 
-TempAssignmentTAStmt *ILGenerator::generateTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op) {
+TempAssignmentTAStmt *ILGenerator::generateBinaryTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op) {
     auto uniTempLhs = dynamic_cast<UniTempP>(uniLhs);
     auto uniTempRhs = dynamic_cast<UniTempP>(uniRhs);
 
@@ -70,63 +76,58 @@ void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
         UniExprP uniLhs = this->convertTerminalToUniExpr(lhs);
         UniExprP uniRhs = this->convertTerminalToUniExpr(rhs);
 
-        this->ilStmts.push_back(generateTempAssignmentIL(uniLhs, uniRhs, op));
+        this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniLhs, uniRhs, op));
     } else if (lhs) {
         UniExprP uniLhs = this->convertTerminalToUniExpr(lhs);
 
         generateExprIL(binExpr->right);
 
-        this->ilStmts.push_back(generateTempAssignmentIL(uniLhs, new UniTemp(currentTemp), op));
+        this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniLhs, new UniTemp(currentTemp), op));
     } else if (rhs) {
         generateExprIL(binExpr->left);
         auto uniTempLhs = new UniTemp(currentTemp);
 
         UniExprP uniRhs = this->convertTerminalToUniExpr(rhs);
 
-        this->ilStmts.push_back(generateTempAssignmentIL(uniTempLhs, uniRhs, op));
+        this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniTempLhs, uniRhs, op));
     } else {
         generateExprIL(binExpr->left);
         auto uniTempLhs = new UniTemp(currentTemp);
 
         generateExprIL(binExpr->right);
 
-        this->ilStmts.push_back(generateTempAssignmentIL(uniTempLhs, new UniTemp(currentTemp), op));
+        this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniTempLhs, new UniTemp(currentTemp), op));
     }
 }
 
-void ILGenerator::generateExprIL(NodeExprP expr) {
-    if (auto binExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
-        generateBinaryExprIL(binExpr);
-    } else if (auto unaryExpr = dynamic_cast<ParenthesisNodeExprP>(expr)) {
+void ILGenerator::generateUnaryExprIL(UnaryNodeExprP unaryExpr) {
+    UniExpr *innerUni = generateExprIL(unaryExpr->expr);
 
-    } else if (auto subVar = dynamic_cast<NodeSubscriptableVariableTerminalP>(expr)) {
-        auto innerVar = dynamic_cast<NodeVariableTerminalP>(subVar->index);
-
-        if (auto innerNum = dynamic_cast<NodeImIntTerminalP>(subVar->index)) {
-            this->ilStmts.push_back(new TempAssignmentTAStmt(++currentTemp,
-                                                             new SubscriptableVariableVal(subVar->variable,
-                                                                                          new ImIntVal(
-                                                                                                  innerNum->value))));
-
-        } else if (innerVar && !dynamic_cast<NodeSubscriptableVariableTerminalP>(subVar->index)) {
-            this->ilStmts.push_back(new TempAssignmentTAStmt(++currentTemp,
-                                                             new SubscriptableVariableVal(subVar->variable,
-                                                                                          new VariableVal(
-                                                                                                 innerVar->variable))));
-        } else {
-            generateExprIL(subVar->index);
-
-            this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp,
-                                                             new SubscriptableVariableVal(subVar->variable,
-                                                                                          new UniTemp(
-                                                                                                  this->currentTemp))));
-        }
-
-    } else if (auto var = dynamic_cast<NodeVariableTerminalP>(expr)) {
-
-    } else if (auto imInt = dynamic_cast<NodeImIntTerminalP>(expr)) {
-
+    if (!dynamic_cast<UniTempP>(innerUni)) {
+        if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
     }
+
+    if (auto logicalNot = dynamic_cast<NodeLogicalNotExprP>(unaryExpr)) {
+        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new LogicalNotExpr(innerUni)));
+    } else if (auto numericNeg = dynamic_cast<NodeNumericNegExprP>(unaryExpr)) {
+        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new NumericNegExpr(innerUni)));
+    }
+}
+
+UniExpr *ILGenerator::generateExprIL(NodeExprP expr) {
+    if (auto binExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
+        this->generateBinaryExprIL(binExpr);
+        return new UniTemp(this->currentTemp);
+    } else if (auto paren = dynamic_cast<NodeParenthesisExprP>(expr)) {
+        return generateExprIL(paren->expr);
+    } else if (auto unary = dynamic_cast<UnaryNodeExprP>(expr)) {
+        this->generateUnaryExprIL(unary);
+        return new UniTemp(this->currentTemp);
+    } else if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
+        return this->convertTerminalToUniExpr(terminal);
+    }
+
+    return nullptr;
 }
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {

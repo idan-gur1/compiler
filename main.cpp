@@ -33,7 +33,7 @@ void printExprTree(NodeExprP expr) {
             std::cout << "sub expr" << std::endl;
         }
 
-    } else if (auto parenthesisExpr = dynamic_cast<ParenthesisNodeExprP>(expr)) {
+    } else if (auto parenthesisExpr = dynamic_cast<NodeParenthesisExprP>(expr)) {
         std::cout << "entered parenthesis node" << std::endl;
         printExprTree(parenthesisExpr->expr);
         std::cout << "exited parenthesis node" << std::endl;
@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
     Parser *parser = nullptr;
     ProgramTreeP program = nullptr;
     ILGenerator *generator = nullptr;
+    UniExprP expr = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
 
         // TODO REMOVE: TESTING CODE
         generator = new ILGenerator(nullptr, "");
-        generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[0]->scope->stmts[1])->expr);
+        expr = generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[0]->scope->stmts[1])->expr);
 
 
     } catch (const CompilationException &e) {
@@ -96,6 +97,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Compilation finished - cleaning memory" << std::endl;
 
+    delete expr;
     delete generator;
     delete program;
     delete parser;

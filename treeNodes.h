@@ -427,7 +427,10 @@ typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
 
 typedef NodeExpr *NodeExprP;
 typedef BinaryNodeExpr *BinaryNodeExprP;
-typedef NodeParenthesisExpr *ParenthesisNodeExprP;
+typedef UnaryNodeExpr *UnaryNodeExprP;
+typedef NodeParenthesisExpr *NodeParenthesisExprP;
+typedef NodeLogicalNotExpr *NodeLogicalNotExprP;
+typedef NodeNumericNegExpr *NodeNumericNegExprP;
 typedef TerminalNodeExpr *TerminalNodeExprP;
 typedef NodeAddExpr *NodeAddExprP;
 typedef NodeSubExpr *NodeSubExprP;

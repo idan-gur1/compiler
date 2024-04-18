@@ -65,6 +65,32 @@ public:
     }
 };
 
+class LogicalNotExpr : public UniExpr{
+public:
+    UniExpr *expr;
+
+    explicit LogicalNotExpr(UniExpr *expr) {
+        this->expr = expr;
+    }
+
+    ~LogicalNotExpr() override {
+        delete expr;
+    }
+};
+
+class NumericNegExpr : public UniExpr{
+public:
+    UniExpr *expr;
+
+    explicit NumericNegExpr(UniExpr *expr) {
+        this->expr = expr;
+    }
+
+    ~NumericNegExpr() override {
+        delete expr;
+    }
+};
+
 enum class ExprOperator {
     add,
     sub,
@@ -258,11 +284,12 @@ public:
     void generateFunctionIL(NodeFunctionP function);
     void generateScopeIL(NodeScopeP scope);
     void generateStmtIL(NodeStmtP stmt);
-    void generateExprIL(NodeExprP expr);
+    UniExpr *generateExprIL(NodeExprP expr);
 
 private:
-    TempAssignmentTAStmt *generateTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
+    TempAssignmentTAStmt *generateBinaryTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
     void generateBinaryExprIL(BinaryNodeExprP);
+    void generateUnaryExprIL(UnaryNodeExprP);
     UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
 
     ProgramTreeP program;
