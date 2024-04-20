@@ -432,6 +432,8 @@ typedef NodeParenthesisExpr *NodeParenthesisExprP;
 typedef NodeLogicalNotExpr *NodeLogicalNotExprP;
 typedef NodeNumericNegExpr *NodeNumericNegExprP;
 typedef TerminalNodeExpr *TerminalNodeExprP;
+typedef AddrNodeExpr *AddrNodeExprP;
+typedef NodeFunctionCall *NodeFunctionCallP;
 typedef NodeAddExpr *NodeAddExprP;
 typedef NodeSubExpr *NodeSubExprP;
 typedef NodeMultExpr *NodeMultExprP;

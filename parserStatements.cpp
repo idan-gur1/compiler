@@ -16,7 +16,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     auto *ptr = dynamic_cast<AddrNodeExpr *>(innerExpr);
     auto *func = dynamic_cast<NodeFunctionCall *>(innerExpr);
 
-    if (!var.ptrType) {
+    /*if (!var.ptrType) {
         this->checkPointerUsage(innerExpr);
 
         return new NodePrimitiveAssignmentStmt(var, innerExpr);
@@ -25,18 +25,25 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     if (!ptr && !(func && func->function->returnPtr)) {
         delete innerExpr;
         this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+    }*/
+
+    if (var.ptrType != this->ptrUsedInExpr) {
+        delete innerExpr;
+        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
     }
 
-    if ((ptr && ptr->target->variable.type != var.type) || (func && func->function->returnType != var.type)) {
+    if ((ptr && ptr->target->variable.type != var.type) || (func && func->function->returnPtr && func->function->returnType != var.type)) {
         delete innerExpr;
         this->throwSemanticError("Incompatible pointer type assignment to '" + var.name + "'");
     }
 
-    if (ptr) {
+    return new NodePrimitiveAssignmentStmt(var, innerExpr);
+
+    /*if (ptr) {
         return new NodePointerAddrAssignmentStmt(var, ptr);
     }
 
-    return new NodePointerAddrAssignmentStmt(var, func);
+    return new NodePointerAddrAssignmentStmt(var, func);*/
 }
 
 NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
@@ -47,7 +54,15 @@ NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
     NodeExprP indexExpr = this->parseArrayBrackets();
 
     if (checkForTokenTypeAndConsumeIfYes(TokenType::equal)) {
-        return new NodeArrayAssignmentStmt(var, indexExpr, this->parseExpr());
+        NodeExprP innerExpr = this->parseExpr();
+
+        if (this->ptrUsedInExpr) {
+            delete indexExpr;
+            delete innerExpr;
+            this->throwSemanticError("Invalid use of pointers");
+        }
+
+        return new NodeArrayAssignmentStmt(var, indexExpr, innerExpr);
     }
 
     delete indexExpr;

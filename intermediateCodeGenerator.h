@@ -9,6 +9,8 @@
 #include <utility>
 #include <sstream>
 #include <typeindex>
+#include <fstream>
+#include <ranges>
 #include "lexer.h"
 #include "treeNodes.h"
 
@@ -91,6 +93,19 @@ public:
     }
 };
 
+class AddrExpr : public ThreeAddressExpr{
+public:
+    VariableVal *addressable;
+
+    explicit AddrExpr(VariableVal *addressable) {
+        this->addressable = addressable;
+    }
+
+    ~AddrExpr() override {
+        delete addressable;
+    }
+};
+
 enum class ExprOperator {
     add,
     sub,
@@ -157,6 +172,33 @@ public:
         delete var;
         delete expr;
     }
+};
+
+class FunctionParamPushStmt : public ThreeAddressStmt {
+public:
+    VariableType varType;
+    bool isPtr;
+    ThreeAddressExpr *expr;
+
+    FunctionParamPushStmt(VariableType varType, bool isPtr, ThreeAddressExpr *expr) : varType(varType) {
+        this->isPtr = isPtr;
+        this->expr = expr;
+    }
+
+    ~FunctionParamPushStmt() override {
+        delete expr;
+    }
+};
+
+class FunctionCallExpr : public UniExpr, public ThreeAddressStmt {
+public:
+    std::string functionName;
+
+    explicit FunctionCallExpr(std::string functionName) {
+        this->functionName = std::move(functionName);
+    }
+
+    ~FunctionCallExpr() override = default;
 };
 
 /*class FunctionDeclarationStmt : public ThreeAddressStmt {
@@ -284,13 +326,15 @@ public:
     void generateFunctionIL(NodeFunctionP function);
     void generateScopeIL(NodeScopeP scope);
     void generateStmtIL(NodeStmtP stmt);
-    UniExpr *generateExprIL(NodeExprP expr);
+    ThreeAddressExpr *generateExprIL(NodeExprP expr);
 
 private:
+    UniExpr *generateNumericExprIL(NodeExprP expr);
     TempAssignmentTAStmt *generateBinaryTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
     void generateBinaryExprIL(BinaryNodeExprP);
     void generateUnaryExprIL(UnaryNodeExprP);
     UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
+    FunctionCallExpr *generateFunctionCallExprIL(NodeFunctionCallP);
 
     ProgramTreeP program;
     std::string outfileName;

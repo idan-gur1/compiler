@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     Parser *parser = nullptr;
     ProgramTreeP program = nullptr;
     ILGenerator *generator = nullptr;
-    UniExprP expr = nullptr;
+    ThreeAddressExpr *expr = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
         // TODO REMOVE: TESTING CODE
         generator = new ILGenerator(nullptr, "");
-        expr = generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[0]->scope->stmts[1])->expr);
+        expr = generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[1]->scope->stmts[1])->expr);
 
 
     } catch (const CompilationException &e) {
