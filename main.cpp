@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
         // TODO REMOVE: TESTING CODE
         generator = new ILGenerator(nullptr, "");
-        expr = generator->generateExprIL(dynamic_cast<NodePrimitiveAssignmentStmtP>(program->functions[1]->scope->stmts[1])->expr);
+        expr = generator->generateExprIL(dynamic_cast<NodeArrayAssignmentStmtP>(program->functions[1]->scope->stmts[1])->expr);
 
 
     } catch (const CompilationException &e) {

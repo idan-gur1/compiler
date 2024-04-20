@@ -201,52 +201,6 @@ public:
     ~FunctionCallExpr() override = default;
 };
 
-/*class FunctionDeclarationStmt : public ThreeAddressStmt {
-public:
-    std::string funcName;
-    std::vector<Variable> params;
-    int maxTemp = 0;
-
-    FunctionDeclarationStmt(std::string funcName, std::vector<Variable> params) : funcName(std::move(funcName)) {
-        this->params = std::move(params);
-    }
-};
-
-class SetFunctionReturnValStmt : public ThreeAddressStmt {
-public:
-    UniExpr expr;
-
-    explicit SetFunctionReturnValStmt(const UniExpr& expr) : expr(expr) {
-    }
-};
-
-class FunctionExitStmt : public ThreeAddressStmt {
-public:
-    std::string funcName;
-
-    explicit FunctionExitStmt(std::string funcName) : funcName(std::move(funcName)) {
-    }
-};
-
-class ScopeDeclarationStmt : public ThreeAddressStmt {
-public:
-    int scopeId;
-    std::vector<Variable> vars;
-
-    ScopeDeclarationStmt(int scopeId, std::vector<Variable> vars) {
-        this->scopeId = scopeId;
-        this->vars = std::move(vars);
-    }
-};
-
-class ScopeExitStmt : public ThreeAddressStmt {
-public:
-    int scopeId;
-
-    explicit ScopeExitStmt(int scopeId) {
-        this->scopeId = scopeId;
-    }
-};
 
 class LabelStmt : public ThreeAddressStmt {
 public:
@@ -267,21 +221,30 @@ public:
 class GotoIfZeroStmt : public ThreeAddressStmt {
 public:
     std::string labelName;
-    UniExpr expr;
+    UniExpr *expr;
 
-    GotoIfZeroStmt(std::string labelName, const UniExpr& expr) : labelName(std::move(labelName)), expr(expr) {
+    GotoIfZeroStmt(std::string labelName, UniExpr *expr) : labelName(std::move(labelName)) {
+        this->expr = expr;
+    }
+
+    ~GotoIfZeroStmt() override {
+        delete expr;
     }
 };
 
 class GotoIfNotZeroStmt : public ThreeAddressStmt {
 public:
     std::string labelName;
-    UniExpr expr;
+    UniExpr *expr;
 
-    GotoIfNotZeroStmt(std::string labelName, const UniExpr& expr) : labelName(std::move(labelName)), expr(expr) {
+    GotoIfNotZeroStmt(std::string labelName, UniExpr *expr) : labelName(std::move(labelName)) {
+        this->expr = expr;
     }
-};*/
 
+    ~GotoIfNotZeroStmt() override {
+        delete expr;
+    }
+};
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
 typedef BinaryExpr *BinaryExprP;
@@ -336,12 +299,15 @@ private:
     UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
     FunctionCallExpr *generateFunctionCallExprIL(NodeFunctionCallP);
 
+    int incCurrentTemp();
+
     ProgramTreeP program;
     std::string outfileName;
 
     std::unordered_map<std::type_index, ExprOperator> exprOperatorMap;
     std::string currentFunctionName;
-    int currentScopeId = 0;
+    int currentIfId = 0;
+    int currentWhileId = 0;
     int currentTemp = 0;
     int maxTemp = 0;
 };

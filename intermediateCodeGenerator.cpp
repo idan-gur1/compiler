@@ -21,8 +21,18 @@ std::string ilStmtToStr(ThreeAddressStmt *taStmt) {
     return strStream.str();
 }
 
-FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP) {
-    return nullptr;
+FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP funcCall) {
+    int tempCurrentTemp = this->currentTemp;
+
+    for (int i = funcCall->function->params.size() - 1; i >= 0; --i) {
+        this->ilStmts.push_back(new FunctionParamPushStmt(funcCall->function->params[i].type,
+                                                          funcCall->function->params[i].ptrType,
+                                                          this->generateExprIL(funcCall->params[i])));
+
+        this->currentTemp = tempCurrentTemp;
+    }
+
+    return new FunctionCallExpr(funcCall->function->name);
 }
 
 UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
@@ -35,9 +45,7 @@ UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
 
         UniExprP innerUni = generateNumericExprIL(subVar->index);
 
-        if (!dynamic_cast<UniTempP>(innerUni)) {
-            if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
-        }
+        if (!dynamic_cast<UniTempP>(innerUni)) incCurrentTemp();
 
         this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp,
                                                          new SubscriptableVariableVal(subVar->variable, innerUni)));
@@ -46,19 +54,9 @@ UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
     } else if (auto var = dynamic_cast<NodeVariableTerminalP>(terminalExpr)) {
         return new VariableVal(var->variable);
     } else if (auto funcCall = dynamic_cast<NodeFunctionCallP>(terminalExpr)) {
-        int tempCurrentTemp = this->currentTemp;
+        auto funcCallIL = generateFunctionCallExprIL(funcCall);
 
-        for (int i = funcCall->function->params.size() - 1; i >= 0; --i) {
-            this->ilStmts.push_back(new FunctionParamPushStmt(funcCall->function->params[i].type,
-                                                              funcCall->function->params[i].ptrType,
-                                                              this->generateExprIL(funcCall->params[i])));
-
-            this->currentTemp = tempCurrentTemp;
-        }
-
-        if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
-
-        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new FunctionCallExpr(funcCall->function->name)));
+        this->ilStmts.push_back(new TempAssignmentTAStmt(incCurrentTemp(), funcCallIL));
 
         return new UniTemp(this->currentTemp);
     }
@@ -79,9 +77,7 @@ TempAssignmentTAStmt *ILGenerator::generateBinaryTempAssignmentIL(UniExprP uniLh
         return new TempAssignmentTAStmt(uniTempRhs->id, new BinaryExpr(uniLhs, uniTempRhs, op));
     }
 
-    if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
-
-    return new TempAssignmentTAStmt(currentTemp, new BinaryExpr(uniLhs, uniRhs, op));
+    return new TempAssignmentTAStmt(incCurrentTemp(), new BinaryExpr(uniLhs, uniRhs, op));
 }
 
 void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
@@ -112,9 +108,7 @@ void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
 void ILGenerator::generateUnaryExprIL(UnaryNodeExprP unaryExpr) {
     UniExpr *innerUni = generateNumericExprIL(unaryExpr->expr);
 
-    if (!dynamic_cast<UniTempP>(innerUni)) {
-        if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
-    }
+    if (!dynamic_cast<UniTempP>(innerUni)) incCurrentTemp();
 
     if (auto logicalNot = dynamic_cast<NodeLogicalNotExprP>(unaryExpr)) {
         this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new LogicalNotExpr(innerUni)));
@@ -134,10 +128,6 @@ UniExpr *ILGenerator::generateNumericExprIL(NodeExprP expr) {
         return new UniTemp(this->currentTemp);
     } else if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
         return this->convertTerminalToUniExpr(terminal);
-    } else if (auto addr = dynamic_cast<AddrNodeExprP>(expr)) {
-        if (dynamic_cast<NodeSubscriptableVariableTerminalP>(addr->target)) {
-
-        }
     }
 
     return nullptr;
@@ -160,21 +150,36 @@ ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
 }
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {
-//    if (auto assignmentStmt = dynamic_cast<NodeAssignmentStmtP>(stmt)) {
-//        this->currentTemp = 0;
-//        this->generateExprIL(assignmentStmt->expr);
-//
-//        VarAssignmentTAStmt *tac = nullptr;
-//        this->declarations++;
-//
-//        if (auto terminalExpr = dynamic_cast<TerminalNodeExprP>(assignmentStmt->expr)) {
-//            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniVal(terminalExpr->val));
-//        } else {
-//            tac = new VarAssignmentTAStmt(assignmentStmt->ident.val, new UniTemp(currentTemp));
-//        }
-//
-//        this->ilStmts.push_back(tac);
-//    }
+    if (auto primitiveAssignmentStmt = dynamic_cast<NodePrimitiveAssignmentStmtP>(stmt)) {
+        this->ilStmts.push_back(new VarAssignmentTAStmt(new VariableVal(primitiveAssignmentStmt->variable),
+                                                        generateExprIL(primitiveAssignmentStmt->expr)));
+    } else if (auto arrayAssignmentStmt = dynamic_cast<NodeArrayAssignmentStmtP>(stmt)) {
+        this->ilStmts.push_back(new VarAssignmentTAStmt(new SubscriptableVariableVal(arrayAssignmentStmt->array,
+                                                                                     generateNumericExprIL(
+                                                                                             arrayAssignmentStmt->index)),
+                                                        generateExprIL(arrayAssignmentStmt->expr)));
+    } else if (auto ifStmt = dynamic_cast<NodeIfP>(stmt)) {
+        std::string ifName = "If" + std::to_string(++currentIfId); // TODO continue here
+        this->ilStmts.push_back(new LabelStmt(ifName));
+        if (ifStmt->elseBlock) {
+            this->ilStmts.push_back(new GotoIfZeroStmt("Else" + ifName, generateNumericExprIL(ifStmt->expr)));
+        } else {
+            this->ilStmts.push_back(new GotoIfZeroStmt("End" + ifName, generateNumericExprIL(ifStmt->expr)));
+        }
+        generateScopeIL(ifStmt->ifBlock);
+        if (ifStmt->elseBlock) {
+            this->ilStmts.push_back(new GotoStmt("End" + ifName));
+            this->ilStmts.push_back(new LabelStmt("Else" + ifName));
+            generateScopeIL(ifStmt->elseBlock);
+        }
+        this->ilStmts.push_back(new LabelStmt("End" + ifName));
+    } else if (auto whileStmt = dynamic_cast<NodeWhileP>(stmt)) {
+
+    } else if (auto returnStmt = dynamic_cast<NodeReturnStmtP>(stmt)) {
+
+    } else if (auto scope = dynamic_cast<NodeScopeP>(stmt)) {
+
+    }
 
 }
 
@@ -222,4 +227,9 @@ void ILGenerator::generateProgramIL() {
 
     outFile.close();
 
+}
+
+int ILGenerator::incCurrentTemp() {
+    if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
+    return currentTemp;
 }

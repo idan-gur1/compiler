@@ -420,6 +420,9 @@ typedef NodeFunction *NodeFunctionP;
 typedef NodeScope *NodeScopeP;
 
 typedef NodeStmt *NodeStmtP;
+typedef NodeIf *NodeIfP;
+typedef NodeWhile *NodeWhileP;
+typedef NodeReturnStmt *NodeReturnStmtP;
 typedef NodePrimitiveAssignmentStmt *NodePrimitiveAssignmentStmtP;
 typedef NodePointerAddrAssignmentStmt *NodePointerAddrAssignmentStmtP;
 typedef NodePointerValueAssignmentStmt *NodePointerValueAssignmentStmtP;
