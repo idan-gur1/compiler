@@ -245,6 +245,19 @@ public:
         delete expr;
     }
 };
+
+class SetReturnValueStmt : public ThreeAddressStmt {
+public:
+    ThreeAddressExpr *expr;
+
+    explicit SetReturnValueStmt(ThreeAddressExpr *expr) {
+        this->expr = expr;
+    }
+
+    ~SetReturnValueStmt() override {
+        delete expr;
+    }
+};
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
 typedef BinaryExpr *BinaryExprP;

@@ -159,26 +159,40 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
                                                                                              arrayAssignmentStmt->index)),
                                                         generateExprIL(arrayAssignmentStmt->expr)));
     } else if (auto ifStmt = dynamic_cast<NodeIfP>(stmt)) {
-        std::string ifName = "If" + std::to_string(++currentIfId); // TODO continue here
+        std::string ifName = currentFunctionName + "If" + std::to_string(++currentIfId);
+        std::string endLabel = ifName + "End";
+        std::string elseLabel = ifStmt->elseBlock ? ifName + "Else" : endLabel;
+
         this->ilStmts.push_back(new LabelStmt(ifName));
-        if (ifStmt->elseBlock) {
-            this->ilStmts.push_back(new GotoIfZeroStmt("Else" + ifName, generateNumericExprIL(ifStmt->expr)));
-        } else {
-            this->ilStmts.push_back(new GotoIfZeroStmt("End" + ifName, generateNumericExprIL(ifStmt->expr)));
-        }
+        this->ilStmts.push_back(new GotoIfZeroStmt(elseLabel, generateNumericExprIL(ifStmt->expr)));
         generateScopeIL(ifStmt->ifBlock);
+
         if (ifStmt->elseBlock) {
-            this->ilStmts.push_back(new GotoStmt("End" + ifName));
-            this->ilStmts.push_back(new LabelStmt("Else" + ifName));
+            this->ilStmts.push_back(new GotoStmt(endLabel));
+            this->ilStmts.push_back(new LabelStmt(elseLabel));
             generateScopeIL(ifStmt->elseBlock);
         }
-        this->ilStmts.push_back(new LabelStmt("End" + ifName));
+
+        this->ilStmts.push_back(new LabelStmt(endLabel));
     } else if (auto whileStmt = dynamic_cast<NodeWhileP>(stmt)) {
+        std::string whileName = currentFunctionName + "While" + std::to_string(++currentWhileId);
+        std::string conditionLabel = whileName + "Condition";
+        std::string bodyLabel = whileName + "Body";
 
+        this->ilStmts.push_back(new LabelStmt(whileName));
+        if (!whileStmt->isDoWhile) this->ilStmts.push_back(new GotoStmt(conditionLabel));
+        this->ilStmts.push_back(new LabelStmt(bodyLabel));
+        generateScopeIL(whileStmt->codeBlock);
+        this->ilStmts.push_back(new LabelStmt(conditionLabel));
+        this->ilStmts.push_back(new GotoIfNotZeroStmt(bodyLabel, generateNumericExprIL(whileStmt->expr)));
     } else if (auto returnStmt = dynamic_cast<NodeReturnStmtP>(stmt)) {
+        if (returnStmt->expr) {
+            this->ilStmts.push_back(new SetReturnValueStmt(generateExprIL(returnStmt->expr)));
+        }
 
+        this->ilStmts.push_back(new GotoStmt(currentFunctionName + "End"));
     } else if (auto scope = dynamic_cast<NodeScopeP>(stmt)) {
-
+        generateScopeIL(scope);
     }
 
 }
