@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
 //    }
 
 //    std::ifstream inputFile(argv[1]);
-    std::ifstream inputFile("../testExprGeneration.ig");  // TODO REMOVE: JUST FOR TEST
+//    std::ifstream inputFile("../testExprGeneration.ig");  // TODO REMOVE: JUST FOR TEST
+    std::ifstream inputFile("../test.ig");  // TODO REMOVE: JUST FOR TEST
 
     if (inputFile.fail()) {
         std::cout << "Error with reading the input file." << std::endl;
@@ -74,7 +75,6 @@ int main(int argc, char *argv[]) {
     Parser *parser = nullptr;
     ProgramTreeP program = nullptr;
     ILGenerator *generator = nullptr;
-    ThreeAddressExpr *expr = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -87,9 +87,8 @@ int main(int argc, char *argv[]) {
 
 
         // TODO REMOVE: TESTING CODE
-        generator = new ILGenerator(nullptr, "");
-        expr = generator->generateExprIL(dynamic_cast<NodeArrayAssignmentStmtP>(program->functions[1]->scope->stmts[1])->expr);
-
+        generator = new ILGenerator(program, "");
+        generator->generateProgramIL();
 
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
@@ -97,7 +96,6 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Compilation finished - cleaning memory" << std::endl;
 
-    delete expr;
     delete generator;
     delete program;
     delete parser;

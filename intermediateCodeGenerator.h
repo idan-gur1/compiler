@@ -19,12 +19,12 @@ public:
     virtual ~ThreeAddressExpr() = default;
 };
 
-class UniExpr : public ThreeAddressExpr{
+class UniExpr : public ThreeAddressExpr {
 public:
     ~UniExpr() override = default;
 };
 
-class ImIntVal : public UniExpr{
+class ImIntVal : public UniExpr {
 public:
     std::string value;
 
@@ -35,7 +35,7 @@ public:
     ~ImIntVal() override = default;
 };
 
-class UniTemp : public UniExpr{
+class UniTemp : public UniExpr {
 public:
     int id;
 
@@ -44,7 +44,7 @@ public:
     }
 };
 
-class VariableVal : public UniExpr{
+class VariableVal : public UniExpr {
 public:
     Variable var;
 
@@ -54,7 +54,7 @@ public:
     ~VariableVal() override = default;
 };
 
-class SubscriptableVariableVal : public VariableVal{
+class SubscriptableVariableVal : public VariableVal {
 public:
     UniExpr *index;
 
@@ -67,7 +67,7 @@ public:
     }
 };
 
-class LogicalNotExpr : public UniExpr{
+class LogicalNotExpr : public UniExpr {
 public:
     UniExpr *expr;
 
@@ -80,7 +80,7 @@ public:
     }
 };
 
-class NumericNegExpr : public UniExpr{
+class NumericNegExpr : public UniExpr {
 public:
     UniExpr *expr;
 
@@ -93,7 +93,7 @@ public:
     }
 };
 
-class AddrExpr : public ThreeAddressExpr{
+class AddrExpr : public ThreeAddressExpr {
 public:
     VariableVal *addressable;
 
@@ -121,7 +121,7 @@ enum class ExprOperator {
     lessThanEquals,
 };
 
-class BinaryExpr : public ThreeAddressExpr{
+class BinaryExpr : public ThreeAddressExpr {
 public:
     UniExpr *left;
     UniExpr *right;
@@ -193,9 +193,13 @@ public:
 class FunctionCallExpr : public UniExpr, public ThreeAddressStmt {
 public:
     std::string functionName;
+    VariableType retType;
+    bool retPtr;
 
-    explicit FunctionCallExpr(std::string functionName) {
-        this->functionName = std::move(functionName);
+    FunctionCallExpr(std::string functionName, VariableType retType, bool retPtr)
+                     : functionName(std::move(functionName)),
+                       retType(retType),
+                       retPtr(retPtr) {
     }
 
     ~FunctionCallExpr() override = default;
@@ -258,13 +262,55 @@ public:
         delete expr;
     }
 };
+
+class ScopeEnterStmt : public ThreeAddressStmt {
+public:
+    std::vector<Variable> vars;
+
+    explicit ScopeEnterStmt(std::vector<Variable> vars) : vars(std::move(vars)) {
+    }
+};
+
+class ScopeExitStmt : public ThreeAddressStmt {
+public:
+    ScopeExitStmt() = default;
+};
+
+class FunctionDeclarationStmt : public ThreeAddressStmt {
+public:
+    std::string name;
+    std::vector<Variable> params;
+    int maxTemp = 0;
+
+    FunctionDeclarationStmt(std::string name, std::vector<Variable> params) : name(std::move(name)),
+                                                                              params(std::move(params)) {
+    }
+};
+
+class FunctionExitStmt : public ThreeAddressStmt {
+public:
+    FunctionExitStmt() = default;
+};
+
+typedef ThreeAddressExpr *ThreeAddressExprP;
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
-typedef BinaryExpr *BinaryExprP;
-typedef ThreeAddressExpr *ThreeAddressExprP;
+typedef VariableVal *VariableValP;
+typedef SubscriptableVariableVal *SubscriptableVariableValP;
 typedef ThreeAddressStmt *ThreeAddressStmtP;
 typedef TempAssignmentTAStmt *TempAssignmentTAStmtP;
 typedef VarAssignmentTAStmt *VarAssignmentTAStmtP;
+typedef FunctionParamPushStmt *FunctionParamPushStmtP;
+typedef FunctionCallExpr *FunctionCallExprP;
+typedef LabelStmt *LabelStmtP;
+typedef GotoStmt *GotoStmtP;
+typedef GotoIfZeroStmt *GotoIfZeroStmtP;
+typedef GotoIfNotZeroStmt *GotoIfNotZeroStmtP;
+typedef SetReturnValueStmt *SetReturnValueStmtP;
+typedef ScopeEnterStmt *ScopeEnterStmtP;
+typedef ScopeExitStmt *ScopeExitStmtP;
+typedef FunctionDeclarationStmt *FunctionDeclarationStmtP;
+typedef FunctionExitStmt *FunctionExitStmtP;
 
 std::string ilStmtToStr(ThreeAddressStmt *taStmt);
 
@@ -276,18 +322,18 @@ public:
         this->program = program;
 
         exprOperatorMap = {
-                {typeid(NodeAddExpr), ExprOperator::add},
-                {typeid(NodeSubExpr), ExprOperator::sub},
-                {typeid(NodeMultExpr), ExprOperator::mult},
-                {typeid(NodeDivExpr), ExprOperator::div},
-                {typeid(NodeLogicalOrExpr), ExprOperator::logicalOr},
-                {typeid(NodeLogicalAndExpr), ExprOperator::logicalAnd},
-                {typeid(NodeBoolEqualsExpr), ExprOperator::equals},
-                {typeid(NodeBoolNotEqualsExpr), ExprOperator::notEquals},
-                {typeid(NodeBiggerThanExpr), ExprOperator::biggerThan},
+                {typeid(NodeAddExpr),             ExprOperator::add},
+                {typeid(NodeSubExpr),             ExprOperator::sub},
+                {typeid(NodeMultExpr),            ExprOperator::mult},
+                {typeid(NodeDivExpr),             ExprOperator::div},
+                {typeid(NodeLogicalOrExpr),       ExprOperator::logicalOr},
+                {typeid(NodeLogicalAndExpr),      ExprOperator::logicalAnd},
+                {typeid(NodeBoolEqualsExpr),      ExprOperator::equals},
+                {typeid(NodeBoolNotEqualsExpr),   ExprOperator::notEquals},
+                {typeid(NodeBiggerThanExpr),      ExprOperator::biggerThan},
                 {typeid(NodeBiggerThanEqualExpr), ExprOperator::biggerThanEquals},
-                {typeid(NodeLessThanExpr), ExprOperator::lessThan},
-                {typeid(NodeLessThanEqualExpr), ExprOperator::lessThanEquals},
+                {typeid(NodeLessThanExpr),        ExprOperator::lessThan},
+                {typeid(NodeLessThanEqualExpr),   ExprOperator::lessThanEquals},
         };
     }
 
@@ -295,24 +341,36 @@ public:
         for (int i = 0; i < ilStmts.size(); ++i) {
             delete ilStmts[i];
         }
-        delete program;
     }
 
     void generateProgramIL();
+
     void generateFunctionIL(NodeFunctionP function);
+
     void generateScopeIL(NodeScopeP scope);
+
     void generateStmtIL(NodeStmtP stmt);
+
     ThreeAddressExpr *generateExprIL(NodeExprP expr);
 
 private:
     UniExpr *generateNumericExprIL(NodeExprP expr);
+
     TempAssignmentTAStmt *generateBinaryTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
+
     void generateBinaryExprIL(BinaryNodeExprP);
+
     void generateUnaryExprIL(UnaryNodeExprP);
+
     UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
+
     FunctionCallExpr *generateFunctionCallExprIL(NodeFunctionCallP);
 
     int incCurrentTemp();
+
+    static std::string ilStmtToStr(ThreeAddressStmtP);
+
+    static std::string ilExprToStr(ThreeAddressExprP);
 
     ProgramTreeP program;
     std::string outfileName;

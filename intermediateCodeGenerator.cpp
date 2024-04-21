@@ -5,21 +5,6 @@
 #include "intermediateCodeGenerator.h"
 #include "lexer.h"
 
-std::string uniExprToStr(UniExpr *uniExpr) {
-//    if (auto val = dynamic_cast<UniValP>(uniExpr)) {
-//        return val->val.val;
-//    } else if (auto temp = dynamic_cast<UniTempP>(uniExpr)) {
-//        return "temp" + std::to_string(temp->id);
-//    }
-    return "";
-}
-
-std::string ilStmtToStr(ThreeAddressStmt *taStmt) {
-    std::stringstream strStream;
-
-
-    return strStream.str();
-}
 
 FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP funcCall) {
     int tempCurrentTemp = this->currentTemp;
@@ -32,7 +17,8 @@ FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP func
         this->currentTemp = tempCurrentTemp;
     }
 
-    return new FunctionCallExpr(funcCall->function->name);
+    return new FunctionCallExpr(funcCall->function->name, funcCall->function->returnType,
+                                funcCall->function->returnPtr);
 }
 
 UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
@@ -150,6 +136,8 @@ ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
 }
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {
+    currentTemp = 0;
+
     if (auto primitiveAssignmentStmt = dynamic_cast<NodePrimitiveAssignmentStmtP>(stmt)) {
         this->ilStmts.push_back(new VarAssignmentTAStmt(new VariableVal(primitiveAssignmentStmt->variable),
                                                         generateExprIL(primitiveAssignmentStmt->expr)));
@@ -158,6 +146,8 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
                                                                                      generateNumericExprIL(
                                                                                              arrayAssignmentStmt->index)),
                                                         generateExprIL(arrayAssignmentStmt->expr)));
+    } else if (auto functionCallStmt = dynamic_cast<NodeFunctionCallP>(stmt)) {
+        this->ilStmts.push_back(generateFunctionCallExprIL(functionCallStmt));
     } else if (auto ifStmt = dynamic_cast<NodeIfP>(stmt)) {
         std::string ifName = currentFunctionName + "If" + std::to_string(++currentIfId);
         std::string endLabel = ifName + "End";
@@ -184,6 +174,9 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
         this->ilStmts.push_back(new LabelStmt(bodyLabel));
         generateScopeIL(whileStmt->codeBlock);
         this->ilStmts.push_back(new LabelStmt(conditionLabel));
+
+        currentTemp = 0;
+
         this->ilStmts.push_back(new GotoIfNotZeroStmt(bodyLabel, generateNumericExprIL(whileStmt->expr)));
     } else if (auto returnStmt = dynamic_cast<NodeReturnStmtP>(stmt)) {
         if (returnStmt->expr) {
@@ -194,31 +187,30 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
     } else if (auto scope = dynamic_cast<NodeScopeP>(stmt)) {
         generateScopeIL(scope);
     }
-
 }
 
 void ILGenerator::generateScopeIL(NodeScopeP scope) {
-//    int scopeId = this->currentScopeId++;
-//
-//    this->ilStmts.push_back(new ScopeDeclarationStmt(scopeId, scope->vars));
-//
-//    for (NodeStmtP stmt : scope->stmts) {
-//        this->generateStmtIL(stmt);
-//    }
-//
-//    this->ilStmts.push_back(new ScopeExitStmt(scopeId));
+    this->ilStmts.push_back(new ScopeEnterStmt(scope->vars));
+
+    for (NodeStmtP stmt: scope->stmts) {
+        this->generateStmtIL(stmt);
+    }
+
+    this->ilStmts.push_back(new ScopeExitStmt());
 }
 
 void ILGenerator::generateFunctionIL(NodeFunctionP function) {
-//    auto funcDecStmt = new FunctionDeclarationStmt(function->name, function->params);
-//    this->maxTemp = 0;
-//    this->currentFunctionName = function->name;
-//
-//    this->ilStmts.push_back(funcDecStmt);
-//    this->generateScopeIL(function->scope);
-//    this->ilStmts.push_back(new FunctionExitStmt(function->name));
-//
-//    funcDecStmt->maxTemp = this->maxTemp;
+    auto funcDecStmt = new FunctionDeclarationStmt(function->name, function->params);
+    this->maxTemp = 0;
+    this->currentIfId = 0;
+    this->currentWhileId = 0;
+    this->currentFunctionName = function->name;
+
+    this->ilStmts.push_back(funcDecStmt);
+    this->generateScopeIL(function->scope);
+    this->ilStmts.push_back(new FunctionExitStmt());
+
+    funcDecStmt->maxTemp = this->maxTemp;
 
 }
 
@@ -227,23 +219,81 @@ void ILGenerator::generateProgramIL() {
         this->generateFunctionIL(funcPtr);
     }
 
-    std::ofstream outFile(this->outfileName);
-
-    if (outFile.fail()) {
-        std::cout << "File Error: Error while opening the file " << this->outfileName << std::endl;
-        outFile.close();
-        exit(1);
-    }
-
-    for (ThreeAddressStmt *tasP: this->ilStmts) {
-        outFile << ilStmtToStr(tasP);
-    }
-
-    outFile.close();
+//    std::ofstream outFile(this->outfileName);
+//
+//    if (outFile.fail()) {
+//        std::cout << "File Error: Error while opening the file " << this->outfileName << std::endl;
+//        outFile.close();
+//        exit(1);
+//    }
+//
+//    for (ThreeAddressStmt *tasP: this->ilStmts) {
+//        outFile << ilStmtToStr(tasP);
+//    }
+//
+//    outFile.close();
 
 }
 
 int ILGenerator::incCurrentTemp() {
     if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
     return currentTemp;
+}
+
+std::string ILGenerator::ilExprToStr(ThreeAddressExprP taExpr) {
+    return std::string();
+}
+
+std::string ILGenerator::ilStmtToStr(ThreeAddressStmtP taStmt) {
+    std::stringstream strStream;
+
+    if (auto tempAssignment = dynamic_cast<TempAssignmentTAStmtP>(taStmt)) {
+        strStream << std::to_string(tempAssignment->id) << " = " << ilExprToStr(tempAssignment->expr) << std::endl;
+    } else if (auto varAssignment = dynamic_cast<VarAssignmentTAStmtP>(taStmt)) {
+        if (auto subVar = dynamic_cast<SubscriptableVariableValP>(varAssignment->var)) {
+            strStream << varAssignment->var->var.name << "[" << ilExprToStr(subVar->index) << "] = "
+                      << ilExprToStr(varAssignment->expr) << std::endl;
+        } else {
+            strStream << varAssignment->var->var.name << " = " << ilExprToStr(varAssignment->expr) << std::endl;
+        }
+    } else if (auto functionParamPush = dynamic_cast<FunctionParamPushStmtP>(taStmt)) {
+        strStream << "PushParam " << ilExprToStr(functionParamPush->expr) << std::endl;
+    } else if (auto functionCall = dynamic_cast<FunctionCallExprP>(taStmt)) {
+        strStream << "Call " << functionCall->functionName << std::endl;
+    } else if (auto labelStmt = dynamic_cast<LabelStmtP>(taStmt)) {
+        strStream << labelStmt->labelName << ":" << std::endl;
+    } else if (auto gotoStmt = dynamic_cast<GotoStmtP>(taStmt)) {
+        strStream << "Goto " << gotoStmt->labelName << std::endl;
+    } else if (auto gotoIfZeroStmt = dynamic_cast<GotoIfZeroStmtP>(taStmt)) {
+        strStream << "GotoIfZero " << gotoIfZeroStmt->labelName << std::endl;
+    } else if (auto gotoIfNotZeroStmt = dynamic_cast<GotoIfNotZeroStmtP>(taStmt)) {
+        strStream << "GotoIfZero " << gotoIfNotZeroStmt->labelName << std::endl;
+    } else if (auto setReturnValue = dynamic_cast<SetReturnValueStmtP>(taStmt)) {
+        strStream << "SetReturnValue " << ilExprToStr(setReturnValue->expr) << std::endl;
+    } else if (auto scopeEnter = dynamic_cast<ScopeEnterStmtP>(taStmt)) {
+        strStream << "ScopeEnter Vals: ";
+
+        for (const auto &var: scopeEnter->vars) {
+            strStream << var.name << " ";
+        }
+
+        if (scopeEnter->vars.empty()) strStream << "none";
+        strStream << std::endl;
+    } else if (auto scopeExit = dynamic_cast<ScopeExitStmtP>(taStmt)) {
+        strStream << "ScopeExit" << std::endl;
+    } else if (auto functionDeclaration = dynamic_cast<FunctionDeclarationStmtP>(taStmt)) {
+        strStream << "Function " << functionDeclaration->name << "  MaxTemp: "
+                  << std::to_string(functionDeclaration->maxTemp) << " Params: ";
+
+        for (const auto &params: functionDeclaration->params) {
+            strStream << params.name << " ";
+        }
+
+        if (functionDeclaration->params.empty()) strStream << "none";
+        strStream << std::endl;
+    } else if (auto functionExit = dynamic_cast<FunctionExitStmtP>(taStmt)) {
+        strStream << "EndFunction" << std::endl;
+    }
+
+    return strStream.str();
 }
