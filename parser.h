@@ -45,7 +45,6 @@ private:
     NodeExpr *parseFactor(bool ptrNotAllowed = false);
     NodeExpr *parseArrayBrackets();
     NodeExpr *parseParenthesisExpr();
-//    std::variant<std::vector<NodeExpr *>, std::vector<Variable>> parseParenthesisExprList(bool vars);
     std::vector<Variable> parseParenthesisVariableList();
     std::vector<NodeExpr *> parseParenthesisExprList();
     void checkPointerUsage(NodeExprP expr);
@@ -82,6 +81,7 @@ private:
     std::unordered_map<TokenType, VariableType> typeMap;
 
     bool ptrUsedInExpr = false;
+    bool mainFunctionExists = false;
 };
 
 #endif //COMPILER_PARSER_H

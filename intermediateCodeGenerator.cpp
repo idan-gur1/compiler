@@ -91,16 +91,16 @@ void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
     this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniLhs, uniRhs, op));
 }
 
-void ILGenerator::generateUnaryExprIL(UnaryNodeExprP unaryExpr) {
+UniExpr *ILGenerator::generateUnaryExprIL(UnaryNodeExprP unaryExpr) {
     UniExpr *innerUni = generateNumericExprIL(unaryExpr->expr);
 
-    if (!dynamic_cast<UniTempP>(innerUni)) incCurrentTemp();
-
     if (auto logicalNot = dynamic_cast<NodeLogicalNotExprP>(unaryExpr)) {
-        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new LogicalNotExpr(innerUni)));
+        return new LogicalNotExpr(innerUni);
     } else if (auto numericNeg = dynamic_cast<NodeNumericNegExprP>(unaryExpr)) {
-        this->ilStmts.push_back(new TempAssignmentTAStmt(currentTemp, new NumericNegExpr(innerUni)));
+        return new NumericNegExpr(innerUni);
     }
+
+    return nullptr;
 }
 
 UniExpr *ILGenerator::generateNumericExprIL(NodeExprP expr) {
@@ -110,8 +110,8 @@ UniExpr *ILGenerator::generateNumericExprIL(NodeExprP expr) {
     } else if (auto paren = dynamic_cast<NodeParenthesisExprP>(expr)) {
         return generateNumericExprIL(paren->expr);
     } else if (auto unary = dynamic_cast<UnaryNodeExprP>(expr)) {
-        this->generateUnaryExprIL(unary);
-        return new UniTemp(this->currentTemp);
+        return this->generateUnaryExprIL(unary);
+//        return new UniTemp(this->currentTemp);
     } else if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
         return this->convertTerminalToUniExpr(terminal);
     }

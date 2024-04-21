@@ -18,9 +18,8 @@ bool Lexer::hasBuffer() {
 void Lexer::analyseSource() {
     while (this->hasBuffer()) {
         char cCur = this->currentAndProceed();
-        if (cCur == '-' && (this->hasBuffer() && std::isdigit(this->current()))) {
-            generateTokenByDigit(cCur);
-        } else if (this->singleTypes.contains(cCur)) {
+
+        if (this->singleTypes.contains(cCur)) {
             this->tokens.push_back(Token(this->singleTypes[cCur]));
         } else if (this->doubleTypes.contains(cCur)) {
             generateTokenFromDoubleType(cCur);

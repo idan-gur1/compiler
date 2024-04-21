@@ -366,7 +366,7 @@ private:
 
     void generateBinaryExprIL(BinaryNodeExprP);
 
-    void generateUnaryExprIL(UnaryNodeExprP);
+    UniExpr *generateUnaryExprIL(UnaryNodeExprP);
 
     UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
 

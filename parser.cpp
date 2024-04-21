@@ -216,6 +216,14 @@ NodeFunction *Parser::tryParseFunction() {
 
     if (getFunction(funcName)) this->throwSemanticError("Redeclaration of the function '" + funcName + "'");
 
+    if (funcName == "main") {
+        this->mainFunctionExists = true;
+
+        if (ptr || funcType != VariableType::intType) {
+            this->throwSemanticError("Return value of function 'main' must be of type int");
+        }
+    }
+
     auto funcParams = parseParenthesisVariableList();
 
     auto function = new NodeFunction(funcType, ptr, funcName, funcParams);
@@ -231,6 +239,10 @@ ProgramTree *Parser::parseProgram() {
     this->programTree = new ProgramTree();
 
     while (this->tryParseFunction());
+
+    if (!this->mainFunctionExists) {
+        this->throwSemanticError("No 'main' function found");
+    }
 
     return this->programTree;
 }
