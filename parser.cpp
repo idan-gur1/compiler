@@ -137,7 +137,14 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
         if (this->programTree->functions.back()->returnType == VariableType::voidType) {
             stmt = new NodeReturnStmt(nullptr);
         } else {
-            stmt = new NodeReturnStmt(parseExpr());
+            auto innerExpr = parseExpr();
+
+            if (this->programTree->functions.back()->returnPtr != this->ptrUsedInExpr) {
+                delete innerExpr;
+                this->throwSemanticError("Invalid return type");
+            }
+
+            stmt = new NodeReturnStmt(innerExpr);
         }
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();

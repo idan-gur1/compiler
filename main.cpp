@@ -41,6 +41,7 @@ void printExprTree(NodeExprP expr) {
 }
 
 int main(int argc, char *argv[]) {
+    // TODO: BETTER ERROR MANAGEMENT, ADD ERROR MANAGEMENT IN IL
     // TODO REMOVE COMMENT: FOR TESTING PURPOSES
 //    if (argc < 2) {
 //        std::cout << "Enter the file to be compiled." << std::endl;
@@ -85,9 +86,7 @@ int main(int argc, char *argv[]) {
 
         program = parser->parseProgram();
 
-
-        // TODO REMOVE: TESTING CODE
-        generator = new ILGenerator(program, "");
+        generator = new ILGenerator(program, "../test.il");
         generator->generateProgramIL();
 
     } catch (const CompilationException &e) {

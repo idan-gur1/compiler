@@ -295,8 +295,13 @@ public:
 typedef ThreeAddressExpr *ThreeAddressExprP;
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
+typedef ImIntVal *ImIntValP;
 typedef VariableVal *VariableValP;
 typedef SubscriptableVariableVal *SubscriptableVariableValP;
+typedef LogicalNotExpr *LogicalNotExprP;
+typedef NumericNegExpr *NumericNegExprP;
+typedef AddrExpr *AddrExprP;
+typedef BinaryExpr *BinaryExprP;
 typedef ThreeAddressStmt *ThreeAddressStmtP;
 typedef TempAssignmentTAStmt *TempAssignmentTAStmtP;
 typedef VarAssignmentTAStmt *VarAssignmentTAStmtP;
@@ -321,7 +326,7 @@ public:
     ILGenerator(ProgramTreeP program, std::string outfileName) : outfileName(std::move(outfileName)) {
         this->program = program;
 
-        exprOperatorMap = {
+        NodeExprToExprOperator = {
                 {typeid(NodeAddExpr),             ExprOperator::add},
                 {typeid(NodeSubExpr),             ExprOperator::sub},
                 {typeid(NodeMultExpr),            ExprOperator::mult},
@@ -371,16 +376,32 @@ private:
     static std::string ilStmtToStr(ThreeAddressStmtP);
 
     static std::string ilExprToStr(ThreeAddressExprP);
+    static std::unordered_map<ExprOperator, std::string> exprOperatorToStr;
 
     ProgramTreeP program;
     std::string outfileName;
 
-    std::unordered_map<std::type_index, ExprOperator> exprOperatorMap;
+    std::unordered_map<std::type_index, ExprOperator> NodeExprToExprOperator;
     std::string currentFunctionName;
     int currentIfId = 0;
     int currentWhileId = 0;
     int currentTemp = 0;
     int maxTemp = 0;
+};
+
+inline std::unordered_map<ExprOperator, std::string> ILGenerator::exprOperatorToStr = {
+        {ExprOperator::add,              " + "},
+        {ExprOperator::sub,              " - "},
+        {ExprOperator::mult,             " * "},
+        {ExprOperator::div,              " / "},
+        {ExprOperator::logicalOr,        " || "},
+        {ExprOperator::logicalAnd,       " && "},
+        {ExprOperator::equals,           " == "},
+        {ExprOperator::notEquals,        " != "},
+        {ExprOperator::biggerThan,       " > "},
+        {ExprOperator::biggerThanEquals, " >= "},
+        {ExprOperator::lessThan,         " < "},
+        {ExprOperator::lessThanEquals,   " <= "},
 };
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H

@@ -67,7 +67,7 @@ TempAssignmentTAStmt *ILGenerator::generateBinaryTempAssignmentIL(UniExprP uniLh
 }
 
 void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
-    ExprOperator op = this->exprOperatorMap[typeid(*binExpr)];
+    ExprOperator op = this->NodeExprToExprOperator[typeid(*binExpr)];
 
     auto lhs = dynamic_cast<TerminalNodeExprP>(binExpr->left);
     auto rhs = dynamic_cast<TerminalNodeExprP>(binExpr->right);
@@ -208,6 +208,7 @@ void ILGenerator::generateFunctionIL(NodeFunctionP function) {
 
     this->ilStmts.push_back(funcDecStmt);
     this->generateScopeIL(function->scope);
+    this->ilStmts.push_back(new LabelStmt(function->name + "End"));
     this->ilStmts.push_back(new FunctionExitStmt());
 
     funcDecStmt->maxTemp = this->maxTemp;
@@ -219,19 +220,18 @@ void ILGenerator::generateProgramIL() {
         this->generateFunctionIL(funcPtr);
     }
 
-//    std::ofstream outFile(this->outfileName);
-//
-//    if (outFile.fail()) {
-//        std::cout << "File Error: Error while opening the file " << this->outfileName << std::endl;
-//        outFile.close();
-//        exit(1);
-//    }
-//
-//    for (ThreeAddressStmt *tasP: this->ilStmts) {
-//        outFile << ilStmtToStr(tasP);
-//    }
-//
-//    outFile.close();
+    std::ofstream outFile(this->outfileName);
+
+    if (outFile.fail()) {
+        outFile.close();
+        throw CompilationException("[IL Generation - File Error] Error while opening the file " + this->outfileName);
+    }
+
+    for (ThreeAddressStmt *tasP: this->ilStmts) {
+        outFile << ilStmtToStr(tasP);
+    }
+
+    outFile.close();
 
 }
 
@@ -241,35 +241,51 @@ int ILGenerator::incCurrentTemp() {
 }
 
 std::string ILGenerator::ilExprToStr(ThreeAddressExprP taExpr) {
-    return std::string();
+    std::stringstream strStream;
+
+    if (auto imInt = dynamic_cast<ImIntValP>(taExpr)) {
+        strStream << imInt->value;
+    } else if (auto temp = dynamic_cast<UniTempP>(taExpr)) {
+        strStream << "temp" << temp->id;
+    } else if (auto subVar = dynamic_cast<SubscriptableVariableValP>(taExpr)) {
+        strStream << subVar->var.name << "[" << ilExprToStr(subVar->index) << "]";
+    } else if (auto var = dynamic_cast<VariableValP>(taExpr)) {
+        strStream << var->var.name;
+    } else if (auto logicalNot = dynamic_cast<LogicalNotExprP>(taExpr)) {
+        strStream << "!" << ilExprToStr(logicalNot->expr);
+    } else if (auto numericNeg = dynamic_cast<NumericNegExprP>(taExpr)) {
+        strStream << "-" << ilExprToStr(numericNeg->expr);
+    } else if (auto addr = dynamic_cast<AddrExprP>(taExpr)) {
+        strStream << "&" << ilExprToStr(addr->addressable);
+    } else if (auto binary = dynamic_cast<BinaryExprP>(taExpr)) {
+        strStream << ilExprToStr(binary->left) << ILGenerator::exprOperatorToStr[binary->op]
+                  << ilExprToStr(binary->right);
+    }
+
+    return strStream.str();
 }
 
 std::string ILGenerator::ilStmtToStr(ThreeAddressStmtP taStmt) {
     std::stringstream strStream;
 
     if (auto tempAssignment = dynamic_cast<TempAssignmentTAStmtP>(taStmt)) {
-        strStream << std::to_string(tempAssignment->id) << " = " << ilExprToStr(tempAssignment->expr) << std::endl;
+        strStream << "temp" << std::to_string(tempAssignment->id) << " := " << ilExprToStr(tempAssignment->expr);
     } else if (auto varAssignment = dynamic_cast<VarAssignmentTAStmtP>(taStmt)) {
-        if (auto subVar = dynamic_cast<SubscriptableVariableValP>(varAssignment->var)) {
-            strStream << varAssignment->var->var.name << "[" << ilExprToStr(subVar->index) << "] = "
-                      << ilExprToStr(varAssignment->expr) << std::endl;
-        } else {
-            strStream << varAssignment->var->var.name << " = " << ilExprToStr(varAssignment->expr) << std::endl;
-        }
+        strStream << ilExprToStr(varAssignment->var) << " = " << ilExprToStr(varAssignment->expr);
     } else if (auto functionParamPush = dynamic_cast<FunctionParamPushStmtP>(taStmt)) {
-        strStream << "PushParam " << ilExprToStr(functionParamPush->expr) << std::endl;
+        strStream << "PushParam " << ilExprToStr(functionParamPush->expr);
     } else if (auto functionCall = dynamic_cast<FunctionCallExprP>(taStmt)) {
-        strStream << "Call " << functionCall->functionName << std::endl;
+        strStream << "Call " << functionCall->functionName;
     } else if (auto labelStmt = dynamic_cast<LabelStmtP>(taStmt)) {
-        strStream << labelStmt->labelName << ":" << std::endl;
+        strStream << labelStmt->labelName << ":";
     } else if (auto gotoStmt = dynamic_cast<GotoStmtP>(taStmt)) {
-        strStream << "Goto " << gotoStmt->labelName << std::endl;
+        strStream << "Goto " << gotoStmt->labelName;
     } else if (auto gotoIfZeroStmt = dynamic_cast<GotoIfZeroStmtP>(taStmt)) {
-        strStream << "GotoIfZero " << gotoIfZeroStmt->labelName << std::endl;
+        strStream << "GotoIfZero " << gotoIfZeroStmt->labelName;
     } else if (auto gotoIfNotZeroStmt = dynamic_cast<GotoIfNotZeroStmtP>(taStmt)) {
-        strStream << "GotoIfZero " << gotoIfNotZeroStmt->labelName << std::endl;
+        strStream << "GotoIfZero " << gotoIfNotZeroStmt->labelName;
     } else if (auto setReturnValue = dynamic_cast<SetReturnValueStmtP>(taStmt)) {
-        strStream << "SetReturnValue " << ilExprToStr(setReturnValue->expr) << std::endl;
+        strStream << "SetReturnValue " << ilExprToStr(setReturnValue->expr);
     } else if (auto scopeEnter = dynamic_cast<ScopeEnterStmtP>(taStmt)) {
         strStream << "ScopeEnter Vals: ";
 
@@ -278,9 +294,8 @@ std::string ILGenerator::ilStmtToStr(ThreeAddressStmtP taStmt) {
         }
 
         if (scopeEnter->vars.empty()) strStream << "none";
-        strStream << std::endl;
     } else if (auto scopeExit = dynamic_cast<ScopeExitStmtP>(taStmt)) {
-        strStream << "ScopeExit" << std::endl;
+        strStream << "ScopeExit";
     } else if (auto functionDeclaration = dynamic_cast<FunctionDeclarationStmtP>(taStmt)) {
         strStream << "Function " << functionDeclaration->name << "  MaxTemp: "
                   << std::to_string(functionDeclaration->maxTemp) << " Params: ";
@@ -290,10 +305,11 @@ std::string ILGenerator::ilStmtToStr(ThreeAddressStmtP taStmt) {
         }
 
         if (functionDeclaration->params.empty()) strStream << "none";
-        strStream << std::endl;
     } else if (auto functionExit = dynamic_cast<FunctionExitStmtP>(taStmt)) {
-        strStream << "EndFunction" << std::endl;
+        strStream << "EndFunction";
     }
+
+    strStream << std::endl;
 
     return strStream.str();
 }
