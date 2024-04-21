@@ -5,7 +5,6 @@
 #include "parser.h"
 
 
-
 NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
     if (!this->lexer->hasNextToken()) {
         this->throwSyntaxError("Expression expected");
@@ -101,13 +100,16 @@ NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
 
         if (siblingOpType == TokenType::mult) {
             leftTerm = new NodeMultExpr(leftSibling, leftTerm);
-        } else {
+        } else if (siblingOpType == TokenType::div) {
             leftTerm = new NodeDivExpr(leftSibling, leftTerm);
+        } else {
+            leftTerm = new NodeModuloExpr(leftSibling, leftTerm);
         }
     }
 
     if (!this->lexer->hasNextToken() ||
         (this->lexer->currentToken().type != TokenType::mult &&
+         this->lexer->currentToken().type != TokenType::modulo &&
          this->lexer->currentToken().type != TokenType::div)) {
         return leftTerm;
     }
@@ -172,8 +174,8 @@ NodeExpr *Parser::parseRelationalExpr(NodeExprP leftSibling, TokenType siblingOp
 
     if (!this->lexer->hasNextToken() ||
         (this->lexer->currentToken().type != TokenType::relationalG &&
-        this->lexer->currentToken().type != TokenType::relationalGE &&
-        this->lexer->currentToken().type != TokenType::relationalL &&
+         this->lexer->currentToken().type != TokenType::relationalGE &&
+         this->lexer->currentToken().type != TokenType::relationalL &&
          this->lexer->currentToken().type != TokenType::relationalLE)) {
         return leftExpr;
     }

@@ -95,10 +95,12 @@ void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunct
 
     for (int i = 0; i < params.size(); ++i) {
         auto exprAddr = dynamic_cast<AddrNodeExpr *>(params[i]);
+        auto paramFunc = dynamic_cast<NodeFunctionCall *>(params[i]);
+        bool ptr = exprAddr || paramFunc;
 
-        if (func->params[i].ptrType && !exprAddr ||
-            !func->params[i].ptrType && exprAddr ||
-            (exprAddr && func->params[i].type != exprAddr->target->variable.type)) {
+        if (func->params[i].ptrType != ptr ||
+            (exprAddr && exprAddr->target->variable.type != func->params[i].type) ||
+            (paramFunc && paramFunc->function->returnPtr && paramFunc->function->returnType != func->params[i].type)) {
             for (auto &expr: params) {
                 delete expr;
             }

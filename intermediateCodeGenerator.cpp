@@ -260,6 +260,8 @@ std::string ILGenerator::ilExprToStr(ThreeAddressExprP taExpr) {
     } else if (auto binary = dynamic_cast<BinaryExprP>(taExpr)) {
         strStream << ilExprToStr(binary->left) << ILGenerator::exprOperatorToStr[binary->op]
                   << ilExprToStr(binary->right);
+    } else if (auto functionCall = dynamic_cast<FunctionCallExprP>(taExpr)) {
+        strStream << "RetValOf Call " << functionCall->functionName;
     }
 
     return strStream.str();
@@ -281,9 +283,9 @@ std::string ILGenerator::ilStmtToStr(ThreeAddressStmtP taStmt) {
     } else if (auto gotoStmt = dynamic_cast<GotoStmtP>(taStmt)) {
         strStream << "Goto " << gotoStmt->labelName;
     } else if (auto gotoIfZeroStmt = dynamic_cast<GotoIfZeroStmtP>(taStmt)) {
-        strStream << "GotoIfZero " << gotoIfZeroStmt->labelName;
+        strStream << "GotoIfZero " << ilExprToStr(gotoIfZeroStmt->expr) << " " << gotoIfZeroStmt->labelName;
     } else if (auto gotoIfNotZeroStmt = dynamic_cast<GotoIfNotZeroStmtP>(taStmt)) {
-        strStream << "GotoIfZero " << gotoIfNotZeroStmt->labelName;
+        strStream << "GotoIfNotZero " << ilExprToStr(gotoIfNotZeroStmt->expr) << " " << gotoIfNotZeroStmt->labelName;
     } else if (auto setReturnValue = dynamic_cast<SetReturnValueStmtP>(taStmt)) {
         strStream << "SetReturnValue " << ilExprToStr(setReturnValue->expr);
     } else if (auto scopeEnter = dynamic_cast<ScopeEnterStmtP>(taStmt)) {

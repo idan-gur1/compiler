@@ -28,9 +28,9 @@ int fib(int n) {
 
 int main() {
     int intArr[12];
-    int *cell = getItem(intArr);
+    int *cell = getItem(getItem(intArr));
 
-    int val = 14;
+    int val = -14;
     char arr[4];
 
     arr[val] = val * 12;
@@ -43,6 +43,7 @@ int main() {
     do {
         arr[0] = arr[0] + 12;
         val = val - 1;
+        int digitPlus = 1 + val % 10;
     } while (val > 5);
 
     arr[2] = calc(arr[0], arr[1]);

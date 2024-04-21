@@ -129,6 +129,13 @@ public:
     }
 };
 
+class NodeModuloExpr : public BinaryNodeExpr {
+public:
+
+    NodeModuloExpr(NodeExpr *left, NodeExpr *right) : BinaryNodeExpr(left, right) {
+    }
+};
+
 class NodeLogicalOrExpr : public BinaryNodeExpr {
 public:
 

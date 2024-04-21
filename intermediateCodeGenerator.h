@@ -111,6 +111,7 @@ enum class ExprOperator {
     sub,
     mult,
     div,
+    mod,
     logicalOr,
     logicalAnd,
     equals,
@@ -197,9 +198,9 @@ public:
     bool retPtr;
 
     FunctionCallExpr(std::string functionName, VariableType retType, bool retPtr)
-                     : functionName(std::move(functionName)),
-                       retType(retType),
-                       retPtr(retPtr) {
+            : functionName(std::move(functionName)),
+              retType(retType),
+              retPtr(retPtr) {
     }
 
     ~FunctionCallExpr() override = default;
@@ -317,7 +318,6 @@ typedef ScopeExitStmt *ScopeExitStmtP;
 typedef FunctionDeclarationStmt *FunctionDeclarationStmtP;
 typedef FunctionExitStmt *FunctionExitStmtP;
 
-std::string ilStmtToStr(ThreeAddressStmt *taStmt);
 
 class ILGenerator {
 public:
@@ -331,6 +331,7 @@ public:
                 {typeid(NodeSubExpr),             ExprOperator::sub},
                 {typeid(NodeMultExpr),            ExprOperator::mult},
                 {typeid(NodeDivExpr),             ExprOperator::div},
+                {typeid(NodeModuloExpr),          ExprOperator::mod},
                 {typeid(NodeLogicalOrExpr),       ExprOperator::logicalOr},
                 {typeid(NodeLogicalAndExpr),      ExprOperator::logicalAnd},
                 {typeid(NodeBoolEqualsExpr),      ExprOperator::equals},
@@ -376,6 +377,7 @@ private:
     static std::string ilStmtToStr(ThreeAddressStmtP);
 
     static std::string ilExprToStr(ThreeAddressExprP);
+
     static std::unordered_map<ExprOperator, std::string> exprOperatorToStr;
 
     ProgramTreeP program;
@@ -394,6 +396,7 @@ inline std::unordered_map<ExprOperator, std::string> ILGenerator::exprOperatorTo
         {ExprOperator::sub,              " - "},
         {ExprOperator::mult,             " * "},
         {ExprOperator::div,              " / "},
+        {ExprOperator::mod,              " % "},
         {ExprOperator::logicalOr,        " || "},
         {ExprOperator::logicalAnd,       " && "},
         {ExprOperator::equals,           " == "},

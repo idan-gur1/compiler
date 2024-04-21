@@ -7,38 +7,6 @@
 #include "intermediateCodeGenerator.h"
 #include "errorHandling.h"
 
-void printExprTree(NodeExprP expr) {
-
-    //auto imIntFactor = dynamic_cast<NodeImIntFactorP>(expr);
-
-    if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
-
-        return;
-    }
-
-    if (auto binaryExpr = dynamic_cast<BinaryNodeExprP>(expr)) {
-        printExprTree(binaryExpr->left);
-        printExprTree(binaryExpr->right);
-
-        if (auto divExpr = dynamic_cast<NodeDivExprP>(binaryExpr)) {
-            std::cout << "div term" << std::endl;
-        }
-        else if (auto mulExpr = dynamic_cast<NodeMultExprP>(binaryExpr)) {
-            std::cout << "mult term" << std::endl;
-        }
-        else if (auto addExpr = dynamic_cast<NodeAddExprP>(binaryExpr)) {
-            std::cout << "add expr" << std::endl;
-        }
-        else if (auto subExpr = dynamic_cast<NodeSubExprP>(binaryExpr)) {
-            std::cout << "sub expr" << std::endl;
-        }
-
-    } else if (auto parenthesisExpr = dynamic_cast<NodeParenthesisExprP>(expr)) {
-        std::cout << "entered parenthesis node" << std::endl;
-        printExprTree(parenthesisExpr->expr);
-        std::cout << "exited parenthesis node" << std::endl;
-    }
-}
 
 int main(int argc, char *argv[]) {
     // TODO: BETTER ERROR MANAGEMENT, ADD ERROR MANAGEMENT IN IL

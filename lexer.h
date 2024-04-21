@@ -18,6 +18,7 @@ enum class TokenType {
     minus,
     mult,
     div,
+    modulo,
     equal,
     openParenthesis,
     closeParenthesis,
@@ -51,7 +52,6 @@ enum class TokenType {
     relationalLE,
 };
 
-std::string getTokenName(TokenType tokenType);
 
 struct Token {
     TokenType type;
@@ -80,6 +80,7 @@ public:
                 {'-', TokenType::minus},
                 {'*', TokenType::mult},
                 {'/', TokenType::div},
+                {'%', TokenType::modulo},
                 {'(', TokenType::openParenthesis},
                 {')', TokenType::closeParenthesis},
                 {'{', TokenType::openCurly},
@@ -121,6 +122,16 @@ private:
     std::unordered_map<char, TokenType> singleTypes;
     std::unordered_map<char, std::tuple<TokenType, TokenType>> doubleTypes;
     std::unordered_map<char, std::tuple<TokenType, TokenType>> equalTypes;
+
+    void generateTokenByDigit(char cCur);
+
+    void generateTokenByChar(char cCur);
+
+    void generateTokenFromDoubleType(char cCur);
+
+    void generateTokenFromEqualType(char cCur);
+
+    void generateNumTokenFromCharDec();
 
     char current();
     char currentAndProceed();

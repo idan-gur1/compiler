@@ -16,17 +16,6 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     auto *ptr = dynamic_cast<AddrNodeExpr *>(innerExpr);
     auto *func = dynamic_cast<NodeFunctionCall *>(innerExpr);
 
-    /*if (!var.ptrType) {
-        this->checkPointerUsage(innerExpr);
-
-        return new NodePrimitiveAssignmentStmt(var, innerExpr);
-    }
-
-    if (!ptr && !(func && func->function->returnPtr)) {
-        delete innerExpr;
-        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
-    }*/
-
     if (var.ptrType != this->ptrUsedInExpr) {
         delete innerExpr;
         this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
@@ -38,12 +27,6 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     }
 
     return new NodePrimitiveAssignmentStmt(var, innerExpr);
-
-    /*if (ptr) {
-        return new NodePointerAddrAssignmentStmt(var, ptr);
-    }
-
-    return new NodePointerAddrAssignmentStmt(var, func);*/
 }
 
 NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
