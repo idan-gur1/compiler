@@ -6,6 +6,7 @@
 #include "parser.h"
 #include "intermediateCodeGenerator.h"
 #include "errorHandling.h"
+#include "generation.h"
 
 
 int main(int argc, char *argv[]) {
@@ -43,7 +44,8 @@ int main(int argc, char *argv[]) {
     Lexer *lexer = nullptr;
     Parser *parser = nullptr;
     ProgramTreeP program = nullptr;
-    ILGenerator *generator = nullptr;
+    ILGenerator *ilGenerator = nullptr;
+    Generator *codeGenerator = nullptr;
 
     try {
         lexer = new Lexer(fileContent);
@@ -54,8 +56,11 @@ int main(int argc, char *argv[]) {
 
         program = parser->parseProgram();
 
-        generator = new ILGenerator(program, "../test.il");
-        generator->generateProgramIL();
+        ilGenerator = new ILGenerator(program, "../test.il");
+        ilGenerator->generateProgramIL();
+
+        codeGenerator = new Generator(ilGenerator, "../test.asm");
+        codeGenerator->generateProgram();
 
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
@@ -63,7 +68,8 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Compilation finished - cleaning memory" << std::endl;
 
-    delete generator;
+    delete codeGenerator;
+    delete ilGenerator;
     delete program;
     delete parser;
     delete lexer;
