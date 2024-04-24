@@ -61,6 +61,19 @@ NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
         }
 
         return new NodeSubscriptableVariableTerminal(var, parseArrayBrackets());
+    } else if (currentToken.type == TokenType::mult) {
+        this->lexer->currentAndProceedToken();
+
+        identifierTokenExists();
+        Variable var = this->getVarScopeStack(this->lexer->currentAndProceedToken().val);
+
+        if (var.arrSize == 0 && !var.ptrType) {
+            this->throwSemanticError("'" + var.name + "' cannot be dereferenced");
+        }
+
+        return new NodeSubscriptableVariableTerminal(var,
+                                                     new NodeImIntTerminal(Token(
+                                                             TokenType::immediateInteger, "0")));
     } else if (currentToken.type == TokenType::minus) {
         this->lexer->currentAndProceedToken();
 

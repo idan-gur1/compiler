@@ -64,7 +64,7 @@ jmp fibEnd
 fibEnd:
 leave
 ret 4
-findMaxIndex:     ; FUNCTION
+getMaxPtr:     ; FUNCTION
 push rbp
 mov rbp, rsp
 sub rsp, 8
@@ -72,17 +72,17 @@ sub rsp, 12
 mov rax, 1
 mov DWORD [rbp - 12], eax
 mov rax, QWORD [rbp + 16]
-mov rax, QWORD [rax + 8 * 0]
+movsx rax, DWORD [rax + 4 * 0]
 mov DWORD [rbp - 16], eax
 mov rax, 0
 mov DWORD [rbp - 20], eax
-findMaxIndexWhile1:
-jmp findMaxIndexWhile1Condition
-findMaxIndexWhile1Body:
-findMaxIndexIf1:
+getMaxPtrWhile1:
+jmp getMaxPtrWhile1Condition
+getMaxPtrWhile1Body:
+getMaxPtrIf1:
 mov rax, QWORD [rbp + 16]
 movsx rcx, DWORD [rbp - 12]
-mov rax, QWORD [rax + 8 * rcx]
+movsx rax, DWORD [rax + 4 * rcx]
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
 movsx rbx, DWORD [rbp - 16]
@@ -92,23 +92,23 @@ movzx rax, al
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
 test rax, rax
-jz findMaxIndexIf1End
+jz getMaxPtrIf1End
 mov rax, QWORD [rbp + 16]
 movsx rcx, DWORD [rbp - 12]
-mov rax, QWORD [rax + 8 * rcx]
+movsx rax, DWORD [rax + 4 * rcx]
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
 mov DWORD [rbp - 16], eax
 movsx rax, DWORD [rbp - 12]
 mov DWORD [rbp - 20], eax
-findMaxIndexIf1End:
+getMaxPtrIf1End:
 movsx rax, DWORD [rbp - 12]
 mov rbx, 1
 add rax, rbx
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
 mov DWORD [rbp - 12], eax
-findMaxIndexWhile1Condition:
+getMaxPtrWhile1Condition:
 movsx rax, DWORD [rbp - 12]
 movsx rbx, DWORD [rbp + 24]
 cmp rax, rbx
@@ -117,23 +117,93 @@ movzx rax, al
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
 test rax, rax
-jnz findMaxIndexWhile1Body
-movsx rax, DWORD [rbp - 20]
-jmp findMaxIndexEnd
+jnz getMaxPtrWhile1Body
+mov rax, QWORD [rbp + 16]
+movsx rcx, DWORD [rbp - 20]
+lea rax, [rax + 4 * rcx]
+jmp getMaxPtrEnd
 add rsp, 12
-findMaxIndexEnd:
+getMaxPtrEnd:
+leave
+ret 12
+replaceMaxWithZero:     ; FUNCTION
+push rbp
+mov rbp, rsp
+sub rsp, 8
+sub rsp, 12
+mov rax, 1
+mov DWORD [rbp - 12], eax
+mov rax, QWORD [rbp + 16]
+movsx rax, DWORD [rax + 4 * 0]
+mov DWORD [rbp - 16], eax
+mov rax, 0
+mov DWORD [rbp - 20], eax
+replaceMaxWithZeroWhile1:
+jmp replaceMaxWithZeroWhile1Condition
+replaceMaxWithZeroWhile1Body:
+replaceMaxWithZeroIf1:
+mov rax, QWORD [rbp + 16]
+movsx rcx, DWORD [rbp - 12]
+movsx rax, DWORD [rax + 4 * rcx]
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+movsx rbx, DWORD [rbp - 16]
+cmp rax, rbx
+setg al
+movzx rax, al
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+test rax, rax
+jz replaceMaxWithZeroIf1End
+mov rax, QWORD [rbp + 16]
+movsx rcx, DWORD [rbp - 12]
+movsx rax, DWORD [rax + 4 * rcx]
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+mov DWORD [rbp - 16], eax
+movsx rax, DWORD [rbp - 12]
+mov DWORD [rbp - 20], eax
+replaceMaxWithZeroIf1End:
+movsx rax, DWORD [rbp - 12]
+mov rbx, 1
+add rax, rbx
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+mov DWORD [rbp - 12], eax
+replaceMaxWithZeroWhile1Condition:
+movsx rax, DWORD [rbp - 12]
+movsx rbx, DWORD [rbp + 24]
+cmp rax, rbx
+setl al
+movzx rax, al
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+test rax, rax
+jnz replaceMaxWithZeroWhile1Body
+mov rax, 0
+mov rbx, QWORD [rbp + 16]
+movsx rcx, DWORD [rbp - 20]
+mov DWORD [rbx + 4 * rcx], eax
+add rsp, 12
+replaceMaxWithZeroEnd:
 leave
 ret 12
 main:     ; FUNCTION
 push rbp
 mov rbp, rsp
 sub rsp, 8
-sub rsp, 32
+sub rsp, 40
 mov rax, 15
 mov DWORD [rbp - 40 + 4 * 0], eax
 mov rax, 8
 mov DWORD [rbp - 40 + 4 * 1], eax
-mov rax, 6
+mov rax, 8
+sub rsp, 4
+mov DWORD [rbp - 52], eax
+call fib
+movsx rax, eax
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
 mov DWORD [rbp - 40 + 4 * 2], eax
 mov rax, 20
 mov DWORD [rbp - 40 + 4 * 3], eax
@@ -147,16 +217,33 @@ mov rax, 3
 mov DWORD [rbp - 40 + 4 * 7], eax
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 44], eax
+mov DWORD [rbp - 52], eax
 lea rax, [rbp - 40]
 sub rsp, 8
-mov QWORD [rbp - 52], rax
-call findMaxIndex
-movsx rax, eax
+mov QWORD [rbp - 60], rax
+call replaceMaxWithZero
+mov rax, 8
+sub rsp, 4
+mov DWORD [rbp - 52], eax
+lea rax, [rbp - 40]
+sub rsp, 8
+mov QWORD [rbp - 60], rax
+call getMaxPtr
 mov QWORD [rbp - 8], rax
 mov rax, QWORD [rbp - 8]
+mov QWORD [rbp - 48], rax
+mov rax, QWORD [rbp - 48]
+movsx rax, DWORD [rax + 4 * 0]
+mov rbx, 2
+imul rbx
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+mov rbx, QWORD [rbp - 48]
+mov DWORD [rbx + 4 * 0], eax
+mov rax, QWORD [rbp - 48]
+movsx rax, DWORD [rax + 4 * 0]
 jmp mainEnd
-add rsp, 32
+add rsp, 40
 mainEnd:
 leave
 ret 0

@@ -68,6 +68,7 @@ private:
     NodeStmt *stmtByIdentifier(const Token& ident);
     NodeStmt *stmtPrimitiveAssignment(const Variable& var);
     NodeStmt *stmtArrayAssignment(const Variable& var);
+    NodeStmt *stmtPtrValueAssignment(const Token &ident);
 
     NodeStmt *stmtVariableDeclaration(VariableType type);
 

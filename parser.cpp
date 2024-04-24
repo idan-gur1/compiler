@@ -148,13 +148,20 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
 
             stmt = new NodeReturnStmt(innerExpr);
         }
+    } else if (firstToken.type == TokenType::mult) {
+        this->lexer->currentAndProceedToken();
+        identifierTokenExists();
+
+        stmt = this->stmtPtrValueAssignment(this->lexer->currentAndProceedToken());
     } else if (firstToken.type == TokenType::openCurly) {
         stmt = parseScope();
         delimiterIgnore = true;
     } else if (firstToken.type == TokenType::semiColon) {
         // Ignore
-    } else {
+    } else if (firstToken.type == TokenType::closeCurly) {
         tryAgain = false;
+    } else {
+        this->throwSyntaxError("Unexpected token");
     }
 
     if (!delimiterIgnore && !checkForTokenTypeAndConsume(TokenType::semiColon)) {

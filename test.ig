@@ -10,7 +10,7 @@ int fib(int n) {
     return fib(n - 1) + fib(n - 2);
 }
 
-int findMaxIndex(int *arr, int n) {
+int *getMaxPtr(int *arr, int n) {
     int i = 1;
     int max = arr[0];
     int maxIndex = 0;
@@ -23,19 +23,40 @@ int findMaxIndex(int *arr, int n) {
         i = i + 1;
     }
 
-    return maxIndex;
+    return &arr[maxIndex];
+}
+
+void replaceMaxWithZero(int *arr, int n) {
+    int i = 1;
+    int max = arr[0];
+    int maxIndex = 0;
+
+    while (i < n) {
+        if (arr[i] > max) {
+            max = arr[i];
+            maxIndex = i;
+        }
+        i = i + 1;
+    }
+
+    arr[maxIndex] = 0;
 }
 
 int main() {
     int arr[8];
     arr[0] = 15;
     arr[1] = 8;
-    arr[2] = 6;
+    arr[2] = fib(8);
     arr[3] = 20;
     arr[4] = 12;
     arr[5] = 1;
     arr[6] = 7;
     arr[7] = 3;
 
-    return findMaxIndex(arr, 8);
+    replaceMaxWithZero(arr, 8);
+
+    int *ptr = getMaxPtr(arr, 8);
+    *ptr = *ptr * 2;
+
+    return *ptr;
 }

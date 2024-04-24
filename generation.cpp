@@ -52,12 +52,13 @@ std::string Generator::getStackAddr(const VariableStackData &var) {
 std::string Generator::getSubscriptableStackPosition(SubscriptableVariableValP subVar,
                                                      const std::string &freeReg) {
     VariableStackData varData = this->variableStack[subVar->var.name].top();
-
+    int typeSize = varData.varSize;
     std::string varBaseAddr = getStackAddr(varData);
 
     if (subVar->var.ptrType) {
         this->programOut << "mov " << freeReg << ", QWORD [" << varBaseAddr << "]\n";
         varBaseAddr = freeReg;
+        typeSize = typeSizes[subVar->var.type];
     }
 
     std::string offset = "rcx";
@@ -68,7 +69,7 @@ std::string Generator::getSubscriptableStackPosition(SubscriptableVariableValP s
         convertUniExprToRegister(subVar->index, "rcx");
     }
 
-    return "[" + varBaseAddr + " + " + std::to_string(varData.varSize) + " * " + offset + "]";
+    return "[" + varBaseAddr + " + " + std::to_string(typeSize) + " * " + offset + "]";
 }
 
 void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) {
@@ -79,10 +80,16 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
     } else if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr)) {
         VariableStackData varData = this->variableStack[subVar->var.name].top();
 
-        std::string varAddr = sizeIdentifiers[varData.varSize] + " " +
+        int typeSize = varData.varSize;
+
+        if (subVar->var.ptrType) {
+            typeSize = typeSizes[subVar->var.type];
+        }
+
+        std::string varAddr = sizeIdentifiers[typeSize] + " " +
                               getSubscriptableStackPosition(subVar, reg);
 
-        this->programOut << movTo64BitReg(reg, varAddr, varData.varSize) << "\n";
+        this->programOut << movTo64BitReg(reg, varAddr, typeSize) << "\n";
     } else if (auto var = dynamic_cast<VariableValP>(expr)) {
         VariableStackData varData = this->variableStack[var->var.name].top();
 
@@ -105,8 +112,8 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
 
 void Generator::convertAddrExprToRegister(AddrExprP expr, const std::string &reg) {
     if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr->addressable)) {
-        this->programOut << "lea " << reg << ", " << getSubscriptableStackPosition(subVar, reg)
-                         << "\n";
+        std::string stackPos = getSubscriptableStackPosition(subVar, reg);
+        this->programOut << "lea " << reg << ", " << stackPos << "\n";
     } else {
         Variable var = expr->addressable->var;
         VariableStackData varData = this->variableStack[var.name].top();
@@ -266,12 +273,18 @@ void Generator::convertVarAssignmentToAsm(VarAssignmentTAStmtP varAssignmentStmt
 
     std::string varStackAddr = "[" + getStackAddr(varData) + "]";
 
+    int typeSize = varData.varSize;
+
     if (auto subVar = dynamic_cast<SubscriptableVariableValP>(varAssignmentStmt->var)) {
         varStackAddr = getSubscriptableStackPosition(subVar, "rbx");
+
+        if (subVar->var.ptrType) {
+            typeSize = typeSizes[subVar->var.type];
+        }
     }
 
-    this->programOut << "mov " << sizeIdentifiers[varData.varSize] <<
-                     " " << varStackAddr << ", " << getAxRegisterBySize(varData.varSize) << "\n";
+    this->programOut << "mov " << sizeIdentifiers[typeSize] <<
+                     " " << varStackAddr << ", " << getAxRegisterBySize(typeSize) << "\n";
 }
 
 void Generator::convertFunctionParamPushToAsm(FunctionParamPushStmtP funcParamPushStmt) {

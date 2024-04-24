@@ -28,41 +28,72 @@ Goto fibEnd
 ScopeExit
 fibEnd:
 EndFunction
-Function findMaxIndex  MaxTemp: 1 Params: arr n 
+Function getMaxPtr  MaxTemp: 1 Params: arr n 
 ScopeEnter Vals: i max maxIndex 
 i = 1
 max = arr[0]
 maxIndex = 0
-findMaxIndexWhile1:
-Goto findMaxIndexWhile1Condition
-findMaxIndexWhile1Body:
+getMaxPtrWhile1:
+Goto getMaxPtrWhile1Condition
+getMaxPtrWhile1Body:
 ScopeEnter Vals: none
-findMaxIndexIf1:
+getMaxPtrIf1:
 temp1 := arr[i]
 temp1 := temp1 > max
-GotoIfZero temp1 findMaxIndexIf1End
+GotoIfZero temp1 getMaxPtrIf1End
 ScopeEnter Vals: none
 temp1 := arr[i]
 max = temp1
 maxIndex = i
 ScopeExit
-findMaxIndexIf1End:
+getMaxPtrIf1End:
 temp1 := i + 1
 i = temp1
 ScopeExit
-findMaxIndexWhile1Condition:
+getMaxPtrWhile1Condition:
 temp1 := i < n
-GotoIfNotZero temp1 findMaxIndexWhile1Body
-SetReturnValue maxIndex
-Goto findMaxIndexEnd
+GotoIfNotZero temp1 getMaxPtrWhile1Body
+SetReturnValue &arr[maxIndex]
+Goto getMaxPtrEnd
 ScopeExit
-findMaxIndexEnd:
+getMaxPtrEnd:
+EndFunction
+Function replaceMaxWithZero  MaxTemp: 1 Params: arr n 
+ScopeEnter Vals: i max maxIndex 
+i = 1
+max = arr[0]
+maxIndex = 0
+replaceMaxWithZeroWhile1:
+Goto replaceMaxWithZeroWhile1Condition
+replaceMaxWithZeroWhile1Body:
+ScopeEnter Vals: none
+replaceMaxWithZeroIf1:
+temp1 := arr[i]
+temp1 := temp1 > max
+GotoIfZero temp1 replaceMaxWithZeroIf1End
+ScopeEnter Vals: none
+temp1 := arr[i]
+max = temp1
+maxIndex = i
+ScopeExit
+replaceMaxWithZeroIf1End:
+temp1 := i + 1
+i = temp1
+ScopeExit
+replaceMaxWithZeroWhile1Condition:
+temp1 := i < n
+GotoIfNotZero temp1 replaceMaxWithZeroWhile1Body
+arr[maxIndex] = 0
+ScopeExit
+replaceMaxWithZeroEnd:
 EndFunction
 Function main  MaxTemp: 1 Params: none
-ScopeEnter Vals: arr 
+ScopeEnter Vals: arr ptr 
 arr[0] = 15
 arr[1] = 8
-arr[2] = 6
+PushParam 8
+temp1 := RetValOf Call fib
+arr[2] = temp1
 arr[3] = 20
 arr[4] = 12
 arr[5] = 1
@@ -70,8 +101,14 @@ arr[6] = 7
 arr[7] = 3
 PushParam 8
 PushParam &arr
-temp1 := RetValOf Call findMaxIndex
-SetReturnValue temp1
+Call replaceMaxWithZero
+PushParam 8
+PushParam &arr
+temp1 := RetValOf Call getMaxPtr
+ptr = temp1
+temp1 := ptr[0] * 2
+ptr[0] = temp1
+SetReturnValue ptr[0]
 Goto mainEnd
 ScopeExit
 mainEnd:

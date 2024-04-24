@@ -53,6 +53,26 @@ NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
     return nullptr;
 }
 
+NodeStmt *Parser::stmtPtrValueAssignment(const Token &ident) {
+    Variable var = this->getVarScopeStack(ident.val);
+
+    if (var.arrSize == 0 && !var.ptrType) {
+        this->throwSemanticError("'" + var.name + "' cannot be dereferenced");
+    }
+
+    if (checkForTokenTypeAndConsumeIfYes(TokenType::equal)) {
+        NodeExprP innerExpr = this->parseExpr();
+        checkPointerUsage(innerExpr);
+
+        return new NodeArrayAssignmentStmt(var,
+                                           new NodeImIntTerminal(Token(TokenType::immediateInteger,
+                                                                       "0")),
+                                           innerExpr);
+    }
+
+    return nullptr;
+}
+
 NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
     if (checkForTokenType(TokenType::openParenthesis)) {
         NodeFunctionP func = getFunction(ident.val);
