@@ -5,13 +5,42 @@
 #include "generation.h"
 
 void Generator::generateProgram() {
-    this->programOut << "section .text\n"
+    this->programOut << "section .data\n"
+                        "overflowErrMsg db 'Stack overflow, exiting', 0xa\n"
+                        "LEN equ $ - overflowErrMsg\n\n"
+                        "section .text\n"
                         "global _start\n"
                         "_start:\n"
+                        "mov r8, 0                ; function call stack counter\n"
                         "call main\n"
-                        "movsx rdi, eax  ; exit code param\n"
-                        "mov rax, 0x3c   ; exit code syscall code\n"
-                        "syscall\n";
+                        "movsx rdi, eax           ; exit code\n"
+                        "mov rax, 0x3c            ; syscall number for sys_exit\n"
+                        "syscall\n"
+                        "\n_overflow:\n"
+                        "mov rax, 1               ; syscall number for sys_write\n"
+                        "mov rdi, 1               ; file descriptor 1 (stdout)\n"
+                        "mov rsi, overflowErrMsg  ; pointer to the param\n"
+                        "mov rdx, LEN             ; bytes to write\n"
+                        "syscall\n"
+                        "mov rax, 0x3c            ; syscall number for sys_exit\n"
+                        "mov rdi, 1               ; exit code for error\n"
+                        "syscall\n\n";
+
+    for (const auto &builtinName: this->ilGenerator->builtinFunctionsUsed) {
+        std::ifstream inputFile(PATH_TO_BUILTIN_FUNCTIONS_FOLDER + builtinName + ".asm");
+
+        if (inputFile.fail()) {
+            inputFile.close();
+            throw CompilationException("Can't read builtin function " + builtinName);
+        }
+
+        std::stringstream fileBuffer;
+        fileBuffer << inputFile.rdbuf();
+
+        this->programOut << fileBuffer.str() << "\n\n";
+
+        inputFile.close();
+    }
 
     for (auto ilStmt: this->ilGenerator->ilStmts) {
         convertTAStmtToAsm(ilStmt);
@@ -32,7 +61,7 @@ void Generator::generateProgram() {
 std::string Generator::movTo64BitReg(const std::string &reg, const std::string &val, int size) {
     std::string movType = "mov ";
 
-    if (size < bit64RegSize) {
+    if (size < BIT_64_REG_SIZE) {
         movType = "movsx ";
     }
 
@@ -74,7 +103,7 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
     if (auto imInt = dynamic_cast<ImIntValP>(expr)) {
         this->programOut << "mov " << reg << ", " << imInt->value << "\n";
     } else if (auto temp = dynamic_cast<UniTempP>(expr)) {
-        this->programOut << "mov " << reg << ", QWORD [rbp - " << (temp->id * tempSize) << "]\n";
+        this->programOut << "mov " << reg << ", QWORD [rbp - " << (temp->id * TEMP_SIZE) << "]\n";
     } else if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr)) {
         VariableStackData varData = this->variableStack[subVar->var.name].top();
 
@@ -245,11 +274,11 @@ void Generator::convertTAStmtToAsm(ThreeAddressStmtP taStmt) {
 
 void Generator::convertTempAssignmentToAsm(TempAssignmentTAStmtP tempAssignment) {
     if (auto funcCall = dynamic_cast<FunctionCallExprP>(tempAssignment->expr)) {
-        this->programOut << "call " << funcCall->functionName << "\n";
+        generateAsmFunctionCall(funcCall->functionName);
 
         int retSize = sizeByTypeAndPtr(funcCall->retType, funcCall->retPtr, 0);
 
-        if (retSize < bit64RegSize) {
+        if (retSize < BIT_64_REG_SIZE) {
             this->programOut << "movsx rax, " << getAxRegisterBySize(retSize) << "\n";
         }
 
@@ -259,7 +288,7 @@ void Generator::convertTempAssignmentToAsm(TempAssignmentTAStmtP tempAssignment)
         convertTAExprToRaxRegister(tempAssignment->expr);
     }
 
-    this->programOut << "mov QWORD [rbp - " << (tempAssignment->id * tempSize) << "], rax\n";
+    this->programOut << "mov QWORD [rbp - " << (tempAssignment->id * TEMP_SIZE) << "], rax\n";
 }
 
 void Generator::convertVarAssignmentToAsm(VarAssignmentTAStmtP varAssignmentStmt) {
@@ -299,7 +328,7 @@ void Generator::convertFunctionParamPushToAsm(FunctionParamPushStmtP funcParamPu
 }
 
 void Generator::convertFunctionCallToAsm(FunctionCallExprP functionCallStmt) {
-    this->programOut << "call " << functionCallStmt->functionName << "\n";
+    generateAsmFunctionCall(functionCallStmt->functionName);
     currentRelativeSP -= FuncParamsOffsetSP;
     FuncParamsOffsetSP = 0;
 }
@@ -372,16 +401,18 @@ void Generator::convertFunctionDeclarationToAsm(FunctionDeclarationStmtP functio
     variableStack.clear(); // from last function
 
     this->programOut << functionDeclarationStmt->name << ":     ; FUNCTION\n"
-                     << "push rbp\n"
-                        "mov rbp, rsp\n";
+                     << "cmp r8, " << STACK_OVERFLOW_LIMIT << "\n"
+                                                              "jae _overflow\n"
+                                                              "push rbp\n"
+                                                              "mov rbp, rsp\n";
 
-    currentRelativeSP = functionDeclarationStmt->maxTemp * ptrSize;
+    currentRelativeSP = functionDeclarationStmt->maxTemp * TEMP_SIZE;
 
     if (currentRelativeSP > 0) {
         this->programOut << "sub rsp, " << currentRelativeSP << "\n";
     }
 
-    int paramOffset = bit64RegSize * 2;
+    int paramOffset = BIT_64_REG_SIZE * 2;
 
     for (const auto &param: functionDeclarationStmt->params) {
         int paramSize = sizeByTypeAndPtr(param.type, param.ptrType, 0);
@@ -390,12 +421,18 @@ void Generator::convertFunctionDeclarationToAsm(FunctionDeclarationStmtP functio
         paramOffset += paramSize;
     }
 
-    this->paramsSize = paramOffset - (bit64RegSize * 2);
+    this->paramsSize = paramOffset - (BIT_64_REG_SIZE * 2);
 }
 
 void Generator::convertFunctionExitToAsm() {
     this->programOut << "leave\n"
-                        "ret " << this->paramsSize << "\n";
+                        "ret " << this->paramsSize << "\n\n";
+}
+
+void Generator::generateAsmFunctionCall(const std::string &funcName) {
+    this->programOut << "inc r8\n"
+                        "call " << funcName << "\n"
+                     << "dec r8\n";
 }
 
 std::string Generator::getAxRegisterBySize(int size) {
@@ -416,7 +453,7 @@ std::string Generator::getAxRegisterBySize(int size) {
 
 int Generator::sizeByTypeAndPtr(VariableType type, bool isPtr, int arrSize) {
     if (isPtr) {
-        return ptrSize;
+        return PTR_SIZE;
     }
 
     if (arrSize > 0) {

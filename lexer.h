@@ -19,17 +19,6 @@ public:
 
     explicit Lexer(std::string &src) :
             srcCode(std::move(src)) {
-        doubleTypes = {
-                {'=', {TokenType::equal,     TokenType::doubleEqual}},
-                {'&', {TokenType::ampersand, TokenType::logicalAnd}},
-                {'|', {TokenType::pipe,      TokenType::logicalOr}},
-        };
-
-        equalTypes = {
-                {'!', {TokenType::exclamation, TokenType::notEqual}},
-                {'>', {TokenType::relationalG, TokenType::relationalGE}},
-                {'<', {TokenType::relationalL, TokenType::relationalLE}},
-        };
     }
 
     void analyseSource();
@@ -45,6 +34,7 @@ private:
     static std::unordered_map<char, std::tuple<TokenType, TokenType>> doubleTypes;
     static std::unordered_map<char, std::tuple<TokenType, TokenType>> equalTypes;
     static std::unordered_map<std::string, TokenType> keywords;
+    static std::unordered_map<char, char> escapeChars;
 
     int nCurIndex = 0;
     std::string srcCode;
@@ -108,5 +98,14 @@ inline std::unordered_map<std::string, TokenType> Lexer::keywords = {
         {"while",  TokenType::whileKeyword},
         {"do",     TokenType::doKeyword},
         {"return", TokenType::returnKeyword},
+};
+
+inline std::unordered_map<char, char> Lexer::escapeChars = {
+        {'n', '\n'},
+        {'t', '\t'},
+        {'r', '\r'},
+        {'b', '\b'},
+        {'a', '\a'},
+        {'0', '\0'},
 };
 #endif //COMPILER_LEXER_H

@@ -83,7 +83,7 @@ std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
     return exprList;
 }
 
-NodeFunctionCall *Parser::parseFunctionCall(const Token& ident, bool ignoreReturnValue, bool ptrNotAllowed) {
+NodeFunctionCall *Parser::parseFunctionCall(const Token &ident, bool ignoreReturnValue, bool ptrNotAllowed) {
     NodeFunctionP func = getFunction(ident.val);
     if (!func) {
         throw SemanticAnalysisException("Use of undeclared function '" + ident.val + "'");
@@ -270,6 +270,13 @@ NodeFunction *Parser::tryParseFunction() {
 ProgramTree *Parser::parseProgram() {
     this->programTree = new ProgramTree();
     ParserException::programTree = this->programTree;
+
+    for (auto const &funcTuple: builtInFunctions) {
+        auto function = new NodeFunction(get<1>(funcTuple), get<2>(funcTuple),
+                                         get<0>(funcTuple), get<3>(funcTuple));
+
+        this->programTree->functions.push_back(function);
+    }
 
     while (this->tryParseFunction());
 

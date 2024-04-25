@@ -8,6 +8,10 @@
 FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP funcCall) {
     int tempCurrentTemp = this->currentTemp;
 
+    if (funcCall->function->scope == nullptr) {
+        builtinFunctionsUsed.insert(funcCall->function->name);
+    }
+
     for (int i = funcCall->function->params.size() - 1; i >= 0; --i) {
         this->ilStmts.push_back(new FunctionParamPushStmt(funcCall->function->params[i].type,
                                                           funcCall->function->params[i].ptrType,
@@ -232,7 +236,9 @@ void ILGenerator::generateFunctionIL(NodeFunctionP function) {
 
 void ILGenerator::generateProgramIL() {
     for (auto funcPtr: this->program->functions) {
-        this->generateFunctionIL(funcPtr);
+        if (funcPtr->scope != nullptr) {
+            this->generateFunctionIL(funcPtr);
+        }
     }
 
     std::ofstream outFile(this->outfileName);

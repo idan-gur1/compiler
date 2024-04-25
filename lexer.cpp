@@ -96,6 +96,16 @@ void Lexer::generateTokenFromEqualType(char cCur) {
 void Lexer::generateNumTokenFromCharDec() {
     char innerVal = this->currentAndProceed();
 
+    if (innerVal == '\\') {
+        char escapable = this->currentAndProceed();
+
+        if (!escapeChars.contains(escapable)) {
+            throw LexicalAnalysisException("'" + std::string(escapable, 1) + "' cannot be escaped");
+        }
+
+        innerVal = escapeChars[escapable];
+    }
+
     if (this->currentAndProceed() != '\'') {
         throw LexicalAnalysisException("Expected ' At the end of char declaration");
     }

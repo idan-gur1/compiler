@@ -16,4 +16,8 @@ add_executable(compiler main.cpp
         parserStatements.cpp
         parserExpressions.cpp
         errorHandling.h
-        tokenDefine.h)
+        tokenDefine.h
+        threeAddressExpressionsAndStatements.h
+        compiler.cpp
+        compiler.h
+)

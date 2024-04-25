@@ -41,9 +41,12 @@ public:
     void generateProgram();
 
 private:
-    static const int tempSize = 8;
-    static const int bit64RegSize = 8;
-    static const int ptrSize = 8;
+    inline static const std::string PATH_TO_BUILTIN_FUNCTIONS_FOLDER = "../builtins/";
+    static const int STACK_OVERFLOW_LIMIT = 200;
+
+    static const int TEMP_SIZE = 8;
+    static const int BIT_64_REG_SIZE = 8;
+    static const int PTR_SIZE = 8;
 
     static std::unordered_map<VariableType, int> typeSizes;
     static std::unordered_map<int, std::string> sizeIdentifiers;
@@ -101,6 +104,8 @@ private:
     void convertFunctionDeclarationToAsm(FunctionDeclarationStmtP);
 
     void convertFunctionExitToAsm();
+
+    void generateAsmFunctionCall(const std::string& funcName);
 
     static std::string getAxRegisterBySize(int);
 

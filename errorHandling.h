@@ -20,7 +20,7 @@ public:
     explicit CompilationException(std::string msg)
             : message(std::move(msg))
     {
-        message = "Compilation Error: " + message + ".";
+        message = "Compilation Error: " + message;
     }
 
     // Override the what() method to return our message

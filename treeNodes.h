@@ -6,8 +6,6 @@
 #include <utility>
 #include <vector>
 #include <unordered_set>
-#include <variant>
-#include <iostream>
 #include "tokenDefine.h"
 
 enum class VariableType {
