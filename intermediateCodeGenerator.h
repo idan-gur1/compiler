@@ -293,6 +293,62 @@ public:
     FunctionExitStmt() = default;
 };
 
+class ILGenerator {
+public:
+    std::vector<ThreeAddressStmt *> ilStmts;
+
+    ILGenerator(ProgramTreeP program, std::string outfileName) : outfileName(std::move(outfileName)) {
+        this->program = program;
+    }
+
+    ~ILGenerator() {
+        for (auto ilStmt: ilStmts) {
+            delete ilStmt;
+        }
+    }
+
+    void generateProgramIL();
+
+    void generateFunctionIL(NodeFunctionP function);
+
+    void generateScopeIL(NodeScopeP scope);
+
+    void generateStmtIL(NodeStmtP stmt);
+
+    ThreeAddressExpr *generateExprIL(NodeExprP expr);
+
+private:
+    static std::unordered_map<std::type_index, ExprOperator> NodeExprToExprOperator;
+    static std::unordered_map<ExprOperator, std::string> exprOperatorToStr;
+
+    ProgramTreeP program;
+    std::string outfileName;
+
+    std::string currentFunctionName;
+    int currentIfId = 0;
+    int currentWhileId = 0;
+    int currentTemp = 0;
+    int maxTemp = 0;
+
+    UniExpr *generateNumericExprIL(NodeExprP expr);
+
+    TempAssignmentTAStmt *generateBinaryTempAssignmentIL(UniExpr *uniLhs, UniExpr *uniRhs, ExprOperator op);
+
+    void generateBinaryExprIL(BinaryNodeExprP);
+
+    UniExpr *generateUnaryExprIL(UnaryNodeExprP);
+
+    UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
+
+    FunctionCallExpr *generateFunctionCallExprIL(NodeFunctionCallP);
+
+    int incCurrentTemp();
+
+    static std::string ilStmtToStr(ThreeAddressStmt *);
+
+    static std::string ilExprToStr(ThreeAddressExpr *);
+};
+
 typedef ThreeAddressExpr *ThreeAddressExprP;
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;
@@ -317,94 +373,5 @@ typedef ScopeEnterStmt *ScopeEnterStmtP;
 typedef ScopeExitStmt *ScopeExitStmtP;
 typedef FunctionDeclarationStmt *FunctionDeclarationStmtP;
 typedef FunctionExitStmt *FunctionExitStmtP;
-
-
-class ILGenerator {
-public:
-    std::vector<ThreeAddressStmt *> ilStmts;
-
-    ILGenerator(ProgramTreeP program, std::string outfileName) : outfileName(std::move(outfileName)) {
-        this->program = program;
-
-        NodeExprToExprOperator = {
-                {typeid(NodeAddExpr),             ExprOperator::add},
-                {typeid(NodeSubExpr),             ExprOperator::sub},
-                {typeid(NodeMultExpr),            ExprOperator::mult},
-                {typeid(NodeDivExpr),             ExprOperator::div},
-                {typeid(NodeModuloExpr),          ExprOperator::mod},
-                {typeid(NodeLogicalOrExpr),       ExprOperator::logicalOr},
-                {typeid(NodeLogicalAndExpr),      ExprOperator::logicalAnd},
-                {typeid(NodeBoolEqualsExpr),      ExprOperator::equals},
-                {typeid(NodeBoolNotEqualsExpr),   ExprOperator::notEquals},
-                {typeid(NodeBiggerThanExpr),      ExprOperator::biggerThan},
-                {typeid(NodeBiggerThanEqualExpr), ExprOperator::biggerThanEquals},
-                {typeid(NodeLessThanExpr),        ExprOperator::lessThan},
-                {typeid(NodeLessThanEqualExpr),   ExprOperator::lessThanEquals},
-        };
-    }
-
-    ~ILGenerator() {
-        for (int i = 0; i < ilStmts.size(); ++i) {
-            delete ilStmts[i];
-        }
-    }
-
-    void generateProgramIL();
-
-    void generateFunctionIL(NodeFunctionP function);
-
-    void generateScopeIL(NodeScopeP scope);
-
-    void generateStmtIL(NodeStmtP stmt);
-
-    ThreeAddressExpr *generateExprIL(NodeExprP expr);
-
-private:
-    UniExpr *generateNumericExprIL(NodeExprP expr);
-
-    TempAssignmentTAStmt *generateBinaryTempAssignmentIL(UniExprP uniLhs, UniExprP uniRhs, ExprOperator op);
-
-    void generateBinaryExprIL(BinaryNodeExprP);
-
-    UniExpr *generateUnaryExprIL(UnaryNodeExprP);
-
-    UniExpr *convertTerminalToUniExpr(TerminalNodeExprP terminalExpr);
-
-    FunctionCallExpr *generateFunctionCallExprIL(NodeFunctionCallP);
-
-    int incCurrentTemp();
-
-    static std::string ilStmtToStr(ThreeAddressStmtP);
-
-    static std::string ilExprToStr(ThreeAddressExprP);
-
-    static std::unordered_map<ExprOperator, std::string> exprOperatorToStr;
-
-    ProgramTreeP program;
-    std::string outfileName;
-
-    std::unordered_map<std::type_index, ExprOperator> NodeExprToExprOperator;
-    std::string currentFunctionName;
-    int currentIfId = 0;
-    int currentWhileId = 0;
-    int currentTemp = 0;
-    int maxTemp = 0;
-};
-
-inline std::unordered_map<ExprOperator, std::string> ILGenerator::exprOperatorToStr = {
-        {ExprOperator::add,              " + "},
-        {ExprOperator::sub,              " - "},
-        {ExprOperator::mult,             " * "},
-        {ExprOperator::div,              " / "},
-        {ExprOperator::mod,              " % "},
-        {ExprOperator::logicalOr,        " || "},
-        {ExprOperator::logicalAnd,       " && "},
-        {ExprOperator::equals,           " == "},
-        {ExprOperator::notEquals,        " != "},
-        {ExprOperator::biggerThan,       " > "},
-        {ExprOperator::biggerThanEquals, " >= "},
-        {ExprOperator::lessThan,         " < "},
-        {ExprOperator::lessThanEquals,   " <= "},
-};
 
 #endif //COMPILER_INTERMEDIATECODEGENERATOR_H

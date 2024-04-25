@@ -16,10 +16,6 @@ class Parser {
 public:
     explicit Parser(Lexer *lexer) {
         this->lexer = lexer;
-
-        this->typeMap[TokenType::intKeyword] = VariableType::intType;
-        this->typeMap[TokenType::charKeyword] = VariableType::charType;
-        this->typeMap[TokenType::voidKeyword] = VariableType::voidType;
     }
 
     ~Parser() = default;
@@ -31,6 +27,16 @@ public:
     NodeExpr *parseExpr();
 
 private:
+    static std::unordered_map<TokenType, VariableType> typeMap;
+
+    Lexer *lexer;
+    std::stack<NodeScopeP> scopes;
+    ProgramTreeP programTree = nullptr;
+
+
+    bool ptrUsedInExpr = false;
+    bool mainFunctionExists = false;
+
     NodeExpr *parseAddrExpr();
     NodeExpr *parseLogicalOrExpr(NodeExprP leftSibling = nullptr);
     NodeExpr *parseLogicalAndExpr(NodeExprP leftSibling = nullptr);
@@ -43,10 +49,14 @@ private:
     NodeExpr *parseTerm(NodeExprP leftSibling = nullptr,
                         TokenType siblingOpType = TokenType::NO_TOKEN);
     NodeExpr *parseFactor(bool ptrNotAllowed = false);
+    NodeExpr *FactorByIdentifier(const Token& ident, bool ptrNotAllowed);
+    NodeExpr *FactorByMultToken();
+    NodeExpr *FactorByOpenParenthesis();
     NodeExpr *parseArrayBrackets();
     NodeExpr *parseParenthesisExpr();
     std::vector<Variable> parseParenthesisVariableList();
     std::vector<NodeExpr *> parseParenthesisExprList();
+    NodeFunctionCall *parseFunctionCall(const Token& ident, bool ignoreReturnValue, bool ptrNotAllowed = false);
     void checkPointerUsage(NodeExprP expr);
 
     std::optional<Variable> varExistsCurrentScope(const std::string&);
@@ -60,10 +70,7 @@ private:
     bool checkForTokenTypeAndConsume(TokenType type);
     bool checkForTokenTypeAndConsumeIfYes(TokenType type);
     void identifierTokenExists();
-    void validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func);
-
-    void throwSyntaxError(const std::string& errorMsg);
-    void throwSemanticError(const std::string& errorMsg);
+    static void validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func);
 
     NodeStmt *stmtByIdentifier(const Token& ident);
     NodeStmt *stmtPrimitiveAssignment(const Variable& var);
@@ -74,15 +81,12 @@ private:
 
     NodeStmt *stmtIf();
     NodeStmt *stmtWhile(bool isDo = false);
+};
 
-    Lexer *lexer;
-    std::stack<NodeScopeP> scopes;
-    ProgramTreeP programTree = nullptr;
-
-    std::unordered_map<TokenType, VariableType> typeMap;
-
-    bool ptrUsedInExpr = false;
-    bool mainFunctionExists = false;
+inline std::unordered_map<TokenType, VariableType> Parser::typeMap = {
+        {TokenType::intKeyword, VariableType::intType},
+        {TokenType::charKeyword, VariableType::charType},
+        {TokenType::voidKeyword, VariableType::voidType},
 };
 
 #endif //COMPILER_PARSER_H

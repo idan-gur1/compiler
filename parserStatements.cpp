@@ -8,7 +8,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
     this->lexer->currentAndProceedToken(); // Remove the 'equals' lexeme
 
     if (var.arrSize > 0) {
-        this->throwSemanticError("'" + var.name + "' of type array is constant");
+        throw SemanticAnalysisException("'" + var.name + "' of type array is constant");
     }
 
     NodeExpr *innerExpr = this->parseExpr();
@@ -18,12 +18,12 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
 
     if (var.ptrType != this->ptrUsedInExpr) {
         delete innerExpr;
-        this->throwSemanticError("Invalid assignment to identifier '" + var.name + "'");
+        throw SemanticAnalysisException("Invalid assignment to identifier '" + var.name + "'");
     }
 
     if ((ptr && ptr->target->variable.type != var.type) || (func && func->function->returnPtr && func->function->returnType != var.type)) {
         delete innerExpr;
-        this->throwSemanticError("Incompatible pointer type assignment to '" + var.name + "'");
+        throw SemanticAnalysisException("Incompatible pointer type assignment to '" + var.name + "'");
     }
 
     return new NodePrimitiveAssignmentStmt(var, innerExpr);
@@ -31,7 +31,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
 
 NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
     if (var.arrSize == 0 && !var.ptrType) {
-        this->throwSemanticError("'" + var.name + "' is not subscriptable");
+        throw SemanticAnalysisException("'" + var.name + "' is not subscriptable");
     }
 
     NodeExprP indexExpr = this->parseArrayBrackets();
@@ -42,7 +42,7 @@ NodeStmt *Parser::stmtArrayAssignment(const Variable &var) {
         if (this->ptrUsedInExpr) {
             delete indexExpr;
             delete innerExpr;
-            this->throwSemanticError("Invalid use of pointers");
+            throw SemanticAnalysisException("Invalid use of pointers");
         }
 
         return new NodeArrayAssignmentStmt(var, indexExpr, innerExpr);
@@ -57,7 +57,7 @@ NodeStmt *Parser::stmtPtrValueAssignment(const Token &ident) {
     Variable var = this->getVarScopeStack(ident.val);
 
     if (var.arrSize == 0 && !var.ptrType) {
-        this->throwSemanticError("'" + var.name + "' cannot be dereferenced");
+        throw SemanticAnalysisException("'" + var.name + "' cannot be dereferenced");
     }
 
     if (checkForTokenTypeAndConsumeIfYes(TokenType::equal)) {
@@ -75,16 +75,7 @@ NodeStmt *Parser::stmtPtrValueAssignment(const Token &ident) {
 
 NodeStmt *Parser::stmtByIdentifier(const Token &ident) {
     if (checkForTokenType(TokenType::openParenthesis)) {
-        NodeFunctionP func = getFunction(ident.val);
-        if (!func) {
-            this->throwSemanticError("Use of undeclared function '" + ident.val + "'");
-        }
-
-        std::vector<NodeExprP> params = parseParenthesisExprList();
-
-        validateFunctionCallParams(params, func);
-
-        return new NodeFunctionCall(func, params);
+        return parseFunctionCall(ident, true);
     }
 
     Variable var = this->getVarScopeStack(ident.val);
@@ -108,17 +99,17 @@ NodeStmt *Parser::stmtVariableDeclaration(VariableType type) {
     std::string varName = this->lexer->currentAndProceedToken().val;
 
     if (varExistsCurrentScope(varName)) {
-        this->throwSemanticError("Redeclaration of identifier " + varName);
+        throw SemanticAnalysisException("Redeclaration of identifier " + varName);
     }
 
 
     if (checkForTokenType(TokenType::openSquare)) {
-        if (ptr) this->throwSemanticError("Arrays can't be of type pointers");
+        if (ptr) throw SemanticAnalysisException("Arrays can't be of type pointers");
 
         auto sizeExpr = dynamic_cast<NodeImIntTerminalP>(parseArrayBrackets());
 
         if (!sizeExpr) {
-            this->throwSemanticError("Array size must be known at compile time");
+            throw SemanticAnalysisException("Array size must be known at compile time");
         }
 
         this->addVarToCurrentScope(Variable(varName, type, ptr, std::stoi(sizeExpr->value)));
@@ -166,7 +157,7 @@ NodeStmt *Parser::stmtWhile(bool isDo) {
 
     if (isDo) {
         if (!this->checkForTokenTypeAndConsume(TokenType::whileKeyword)) {
-            this->throwSemanticError("While keyword expected");
+            throw SemanticAnalysisException("While keyword expected");
         }
 
         expr = parseParenthesisExpr();

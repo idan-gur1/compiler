@@ -19,11 +19,11 @@ void Lexer::analyseSource() {
     while (this->hasBuffer()) {
         char cCur = this->currentAndProceed();
 
-        if (this->singleTypes.contains(cCur)) {
-            this->tokens.push_back(Token(this->singleTypes[cCur]));
-        } else if (this->doubleTypes.contains(cCur)) {
+        if (singleTypes.contains(cCur)) {
+            this->tokens.push_back(Token(singleTypes[cCur]));
+        } else if (doubleTypes.contains(cCur)) {
             generateTokenFromDoubleType(cCur);
-        } else if (this->equalTypes.contains(cCur)) {
+        } else if (equalTypes.contains(cCur)) {
             generateTokenFromEqualType(cCur);
         } else if (cCur == '\'') {
             generateNumTokenFromCharDec();
@@ -33,15 +33,17 @@ void Lexer::analyseSource() {
             generateTokenByChar(cCur);
         } else if (cCur == '\n') {
             this->currentLine++;
+            updateErrorLineNumber();
             this->tokens.push_back(Token(TokenType::NEW_LINE));
         } else if (std::isspace(cCur)) {
             // ignore
         } else {
-            this->throwLexerError("[Lexer] Unknown character/token " + std::string(1, cCur));
+            throw LexicalAnalysisException("[Lexer] Unknown character/token " + std::string(1, cCur));
         }
     }
 
     this->currentLine = 1;
+    updateErrorLineNumber();
 
     this->countLines();
 }
@@ -53,7 +55,7 @@ void Lexer::generateTokenByDigit(char cCur) {
         buffer.push_back(this->currentAndProceed());
     }
     if (this->hasBuffer() && std::isalpha(this->current())) {
-        this->throwLexerError("Invalid character '" + std::string(1, cCur) + "'");
+        throw LexicalAnalysisException("Invalid character '" + std::string(1, cCur) + "'");
     }
 
     this->tokens.push_back(Token(TokenType::immediateInteger, buffer));
@@ -66,8 +68,8 @@ void Lexer::generateTokenByChar(char cCur) {
         buffer.push_back(this->currentAndProceed());
     }
 
-    if (this->keywords.contains(buffer)) {
-        this->tokens.push_back(Token(this->keywords[buffer]));
+    if (keywords.contains(buffer)) {
+        this->tokens.push_back(Token(keywords[buffer]));
     } else {
         this->tokens.push_back(Token(TokenType::identifier, buffer));
     }
@@ -76,18 +78,18 @@ void Lexer::generateTokenByChar(char cCur) {
 void Lexer::generateTokenFromDoubleType(char cCur) {
     if (this->hasBuffer() && this->current() == cCur) {
         this->currentAndProceed();
-        this->tokens.push_back(Token(get<1>(this->doubleTypes[cCur])));
+        this->tokens.push_back(Token(get<1>(doubleTypes[cCur])));
     } else {
-        this->tokens.push_back(Token(get<0>(this->doubleTypes[cCur])));
+        this->tokens.push_back(Token(get<0>(doubleTypes[cCur])));
     }
 }
 
 void Lexer::generateTokenFromEqualType(char cCur) {
     if (this->hasBuffer() && this->current() == '=') {
         this->currentAndProceed();
-        this->tokens.push_back(Token(get<1>(this->equalTypes[cCur])));
+        this->tokens.push_back(Token(get<1>(equalTypes[cCur])));
     } else {
-        this->tokens.push_back(Token(get<0>(this->equalTypes[cCur])));
+        this->tokens.push_back(Token(get<0>(equalTypes[cCur])));
     }
 }
 
@@ -95,24 +97,21 @@ void Lexer::generateNumTokenFromCharDec() {
     char innerVal = this->currentAndProceed();
 
     if (this->currentAndProceed() != '\'') {
-        this->throwLexerError("Expected ' At the end of char declaration");
+        throw LexicalAnalysisException("Expected ' At the end of char declaration");
     }
 
     this->tokens.push_back(Token(TokenType::immediateInteger, std::to_string(innerVal)));
 }
 
 bool Lexer::hasNextToken() {
-//    return nTokenIndex < tokens.size();
     return !this->tokens.empty();
 }
 
 Token Lexer::currentToken() {
-//    return this->tokens[nTokenIndex];
     return this->tokens.front();
 }
 
 Token Lexer::currentAndProceedToken() {
-//    Token ret =  this->tokens[nTokenIndex++];
     Token ret = this->tokens.front();
     this->tokens.pop_front();
 
@@ -122,14 +121,14 @@ Token Lexer::currentAndProceedToken() {
 }
 
 void Lexer::countLines() {
-//    while (this->hasNextToken() && this->tokens[nTokenIndex].type == TokenType::NEW_LINE) {
     while (this->hasNextToken() && this->tokens.front().type == TokenType::NEW_LINE) {
         this->currentLine++;
-//        nTokenIndex++;
+        updateErrorLineNumber();
+
         this->tokens.pop_front();
     }
 }
 
-void Lexer::throwLexerError(const std::string &errorMsg) const {
-    throw CompilationException("[Lexer] " + errorMsg + " On line " + std::to_string(this->currentLine));
+void Lexer::updateErrorLineNumber() const {
+    AnalysisStageException::lineNumber = this->currentLine;
 }

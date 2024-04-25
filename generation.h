@@ -45,6 +45,21 @@ private:
     static const int bit64RegSize = 8;
     static const int ptrSize = 8;
 
+    static std::unordered_map<VariableType, int> typeSizes;
+    static std::unordered_map<int, std::string> sizeIdentifiers;
+    static std::unordered_map<ExprOperator, std::string> BinaryExprToAsmStrSteps;
+
+    std::unordered_map<std::string, std::stack<VariableStackData>> variableStack;
+    std::stack<ScopeFrame> scopeFrameStack;
+
+    ILGenerator *ilGenerator;
+    std::string outFileName;
+    std::stringstream programOut;
+    int labelCount = 0;
+    int currentRelativeSP = 0;
+    int FuncParamsOffsetSP = 0;
+    int paramsSize = 0;
+
     static std::string getStackAddr(const VariableStackData &);
 
     static std::string movTo64BitReg(const std::string &, const std::string &, int);
@@ -90,21 +105,6 @@ private:
     static std::string getAxRegisterBySize(int);
 
     static int sizeByTypeAndPtr(VariableType, bool, int);
-
-    static std::unordered_map<VariableType, int> typeSizes;
-    static std::unordered_map<int, std::string> sizeIdentifiers;
-    static std::unordered_map<ExprOperator, std::string> BinaryExprToAsmStrSteps;
-
-    std::unordered_map<std::string, std::stack<VariableStackData>> variableStack;
-    std::stack<ScopeFrame> scopeFrameStack;
-
-    ILGenerator *ilGenerator;
-    std::string outFileName;
-    std::stringstream programOut;
-    int labelCount = 0;
-    int currentRelativeSP = 0;
-    int FuncParamsOffsetSP = 0;
-    int paramsSize = 0;
 };
 
 inline std::unordered_map<VariableType, int> Generator::typeSizes = {

@@ -10,7 +10,6 @@
 
 
 int main(int argc, char *argv[]) {
-    // TODO: BETTER ERROR MANAGEMENT, ADD ERROR MANAGEMENT IN IL
     // TODO REMOVE COMMENT: FOR TESTING PURPOSES
 //    if (argc < 2) {
 //        std::cout << "Enter the file to be compiled." << std::endl;

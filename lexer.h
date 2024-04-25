@@ -10,91 +10,19 @@
 #include <iostream>
 #include <unordered_map>
 #include "errorHandling.h"
+#include "tokenDefine.h"
 
-enum class TokenType {
-    NO_TOKEN,
-    NEW_LINE,
-    plus,
-    minus,
-    mult,
-    div,
-    modulo,
-    equal,
-    openParenthesis,
-    closeParenthesis,
-    immediateInteger,
-    identifier,
-    intKeyword,
-    charKeyword,
-    voidKeyword,
-    ifKeyword,
-    elseKeyword,
-    whileKeyword,
-    doKeyword,
-    returnKeyword,
-    exit,
-    semiColon,
-    coma,
-    openCurly,
-    closeCurly,
-    openSquare,
-    closeSquare,
-    exclamation,
-    ampersand,
-    pipe,
-    logicalOr,
-    logicalAnd,
-    doubleEqual,
-    notEqual,
-    relationalG,
-    relationalGE,
-    relationalL,
-    relationalLE,
-};
-
-
-struct Token {
-    TokenType type;
-    std::string val;
-};
 
 class Lexer {
 public:
     int currentLine = 1;
 
-    explicit Lexer(std::string& src) :
-    srcCode(std::move(src)) {
-        keywords = {
-                {"int", TokenType::intKeyword},
-                {"char", TokenType::charKeyword},
-                {"void", TokenType::voidKeyword},
-                {"if", TokenType::ifKeyword},
-                {"else", TokenType::elseKeyword},
-                {"while", TokenType::whileKeyword},
-                {"do", TokenType::doKeyword},
-                {"return", TokenType::returnKeyword},
-        };
-
-        singleTypes = {
-                {'+', TokenType::plus},
-                {'-', TokenType::minus},
-                {'*', TokenType::mult},
-                {'/', TokenType::div},
-                {'%', TokenType::modulo},
-                {'(', TokenType::openParenthesis},
-                {')', TokenType::closeParenthesis},
-                {'{', TokenType::openCurly},
-                {'}', TokenType::closeCurly},
-                {'[', TokenType::openSquare},
-                {']', TokenType::closeSquare},
-                {',', TokenType::coma},
-                {';', TokenType::semiColon}
-        };
-
+    explicit Lexer(std::string &src) :
+            srcCode(std::move(src)) {
         doubleTypes = {
-                {'=', {TokenType::equal, TokenType::doubleEqual}},
+                {'=', {TokenType::equal,     TokenType::doubleEqual}},
                 {'&', {TokenType::ampersand, TokenType::logicalAnd}},
-                {'|', {TokenType::pipe, TokenType::logicalOr}},
+                {'|', {TokenType::pipe,      TokenType::logicalOr}},
         };
 
         equalTypes = {
@@ -105,23 +33,22 @@ public:
     }
 
     void analyseSource();
+
     bool hasNextToken();
+
     Token currentToken();
+
     Token currentAndProceedToken();
 
 private:
-    void throwLexerError(const std::string &errorMsg) const;
+    static std::unordered_map<char, TokenType> singleTypes;
+    static std::unordered_map<char, std::tuple<TokenType, TokenType>> doubleTypes;
+    static std::unordered_map<char, std::tuple<TokenType, TokenType>> equalTypes;
+    static std::unordered_map<std::string, TokenType> keywords;
 
     int nCurIndex = 0;
-//    int nTokenIndex = 0;
     std::string srcCode;
-//    std::vector<Token> tokens;
     std::list<Token> tokens;
-
-    std::unordered_map<std::string , TokenType> keywords;
-    std::unordered_map<char, TokenType> singleTypes;
-    std::unordered_map<char, std::tuple<TokenType, TokenType>> doubleTypes;
-    std::unordered_map<char, std::tuple<TokenType, TokenType>> equalTypes;
 
     void generateTokenByDigit(char cCur);
 
@@ -134,11 +61,52 @@ private:
     void generateNumTokenFromCharDec();
 
     char current();
+
     char currentAndProceed();
+
     bool hasBuffer();
 
     void countLines();
+
+    void updateErrorLineNumber() const;
 };
 
+inline std::unordered_map<char, TokenType> Lexer::singleTypes = {
+        {'+', TokenType::plus},
+        {'-', TokenType::minus},
+        {'*', TokenType::mult},
+        {'/', TokenType::div},
+        {'%', TokenType::modulo},
+        {'(', TokenType::openParenthesis},
+        {')', TokenType::closeParenthesis},
+        {'{', TokenType::openCurly},
+        {'}', TokenType::closeCurly},
+        {'[', TokenType::openSquare},
+        {']', TokenType::closeSquare},
+        {',', TokenType::coma},
+        {';', TokenType::semiColon}
+};
 
+inline std::unordered_map<char, std::tuple<TokenType, TokenType>> Lexer::doubleTypes = {
+        {'=', {TokenType::equal,     TokenType::doubleEqual}},
+        {'&', {TokenType::ampersand, TokenType::logicalAnd}},
+        {'|', {TokenType::pipe,      TokenType::logicalOr}},
+};
+
+inline std::unordered_map<char, std::tuple<TokenType, TokenType>> Lexer::equalTypes = {
+        {'!', {TokenType::exclamation, TokenType::notEqual}},
+        {'>', {TokenType::relationalG, TokenType::relationalGE}},
+        {'<', {TokenType::relationalL, TokenType::relationalLE}},
+};
+
+inline std::unordered_map<std::string, TokenType> Lexer::keywords = {
+        {"int",    TokenType::intKeyword},
+        {"char",   TokenType::charKeyword},
+        {"void",   TokenType::voidKeyword},
+        {"if",     TokenType::ifKeyword},
+        {"else",   TokenType::elseKeyword},
+        {"while",  TokenType::whileKeyword},
+        {"do",     TokenType::doKeyword},
+        {"return", TokenType::returnKeyword},
+};
 #endif //COMPILER_LEXER_H

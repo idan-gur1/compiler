@@ -12,7 +12,7 @@ NodeExpr *Parser::parseArrayBrackets() {
     this->checkPointerUsage(indexExpr);
 
     if (!this->checkForTokenTypeAndConsume(TokenType::closeSquare)) {
-        this->throwSyntaxError("']' expected");
+        throw SyntaxAnalysisException("']' expected");
     }
 
     return indexExpr;
@@ -20,7 +20,7 @@ NodeExpr *Parser::parseArrayBrackets() {
 
 NodeExpr *Parser::parseParenthesisExpr() {
     if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
-        this->throwSyntaxError("'(' expected");
+        throw SyntaxAnalysisException("'(' expected");
     }
 
     NodeExprP innerExpr = this->parseExpr();
@@ -28,7 +28,7 @@ NodeExpr *Parser::parseParenthesisExpr() {
     this->checkPointerUsage(innerExpr);
 
     if (!this->checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
-        this->throwSyntaxError("')' expected");
+        throw SyntaxAnalysisException("')' expected");
     }
 
     return innerExpr;
@@ -36,15 +36,15 @@ NodeExpr *Parser::parseParenthesisExpr() {
 
 std::vector<Variable> Parser::parseParenthesisVariableList() {
     if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
-        this->throwSyntaxError("'(' expected");
+        throw SyntaxAnalysisException("'(' expected");
     }
 
     std::vector<Variable> varsList;
 
     while (!this->checkForTokenTypeAndConsumeIfYes(TokenType::closeParenthesis)) {
         TokenType varTypeKeyword = this->lexer->currentAndProceedToken().type;
-        if (varTypeKeyword == TokenType::voidKeyword || !this->typeMap.contains(varTypeKeyword)) {
-            this->throwSyntaxError("Valid parameter type expected");
+        if (varTypeKeyword == TokenType::voidKeyword || !typeMap.contains(varTypeKeyword)) {
+            throw SyntaxAnalysisException("Valid parameter type expected");
         }
 
         bool varPtr = checkForTokenType(TokenType::mult);
@@ -53,11 +53,11 @@ std::vector<Variable> Parser::parseParenthesisVariableList() {
         identifierTokenExists();
 
         varsList.push_back(Variable(this->lexer->currentAndProceedToken().val,
-                                    this->typeMap[varTypeKeyword], varPtr));
+                                    typeMap[varTypeKeyword], varPtr));
 
         if (this->checkForTokenTypeAndConsumeIfYes(TokenType::coma) &&
             this->checkForTokenType(TokenType::closeParenthesis)) {
-            this->throwSyntaxError("Expected parameter declaration");
+            throw SyntaxAnalysisException("Expected parameter declaration");
         }
     }
 
@@ -66,7 +66,7 @@ std::vector<Variable> Parser::parseParenthesisVariableList() {
 
 std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
     if (!checkForTokenTypeAndConsume(TokenType::openParenthesis)) {
-        this->throwSyntaxError("'(' expected");
+        throw SyntaxAnalysisException("'(' expected");
     }
 
     std::vector<NodeExpr *> exprList;
@@ -76,11 +76,36 @@ std::vector<NodeExpr *> Parser::parseParenthesisExprList() {
 
         if (this->checkForTokenTypeAndConsumeIfYes(TokenType::coma) &&
             this->checkForTokenType(TokenType::closeParenthesis)) {
-            this->throwSyntaxError("Expression expected");
+            throw SyntaxAnalysisException("Expression expected");
         }
     }
 
     return exprList;
+}
+
+NodeFunctionCall *Parser::parseFunctionCall(const Token& ident, bool ignoreReturnValue, bool ptrNotAllowed) {
+    NodeFunctionP func = getFunction(ident.val);
+    if (!func) {
+        throw SemanticAnalysisException("Use of undeclared function '" + ident.val + "'");
+    }
+
+    if (!ignoreReturnValue && func->returnType == VariableType::voidType) {
+        throw SemanticAnalysisException("Function of type void does not return any value");
+    }
+
+    std::vector<NodeExprP> params = parseParenthesisExprList();
+
+    validateFunctionCallParams(params, func);
+
+    if (!ignoreReturnValue && func->returnPtr) {
+        if (ptrNotAllowed) {
+            throw SemanticAnalysisException("Illegal use of '" + func->name + "'");
+        }
+
+        this->ptrUsedInExpr = true;
+    }
+
+    return new NodeFunctionCall(func, params);
 }
 
 void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunctionP func) {
@@ -89,7 +114,7 @@ void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunct
             delete expr;
         }
 
-        this->throwSemanticError(
+        throw SemanticAnalysisException(
                 "Function '" + func->name + "' expected " + std::to_string(func->params.size()) + " parameters");
     }
 
@@ -105,7 +130,7 @@ void Parser::validateFunctionCallParams(std::vector<NodeExprP> params, NodeFunct
                 delete expr;
             }
 
-            this->throwSemanticError("Function call with incompatible type");
+            throw SemanticAnalysisException("Function call with incompatible type");
         }
     }
 }
@@ -124,7 +149,7 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
     if (firstToken.type == TokenType::identifier) {
         stmt = this->stmtByIdentifier(this->lexer->currentAndProceedToken());
     } else if (firstToken.type == TokenType::intKeyword || firstToken.type == TokenType::charKeyword) {
-        stmt = this->stmtVariableDeclaration(this->typeMap[firstToken.type]);
+        stmt = this->stmtVariableDeclaration(typeMap[firstToken.type]);
     } else if (firstToken.type == TokenType::ifKeyword) {
         stmt = this->stmtIf();
         delimiterIgnore = true;
@@ -143,7 +168,7 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
 
             if (this->programTree->functions.back()->returnPtr != this->ptrUsedInExpr) {
                 delete innerExpr;
-                this->throwSemanticError("Invalid return type");
+                throw SemanticAnalysisException("Invalid return type");
             }
 
             stmt = new NodeReturnStmt(innerExpr);
@@ -161,12 +186,12 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
     } else if (firstToken.type == TokenType::closeCurly) {
         tryAgain = false;
     } else {
-        this->throwSyntaxError("Unexpected token");
+        throw SyntaxAnalysisException("Unexpected token");
     }
 
     if (!delimiterIgnore && !checkForTokenTypeAndConsume(TokenType::semiColon)) {
-        this->throwSyntaxError("';' expected");
-    };
+        throw SyntaxAnalysisException("';' expected");
+    }
 
     return {stmt, tryAgain};
 }
@@ -175,7 +200,7 @@ NodeScope *Parser::parseScope() {
     auto scope = new NodeScope();
 
     if (!checkForTokenTypeAndConsume(TokenType::openCurly)) {
-        this->throwSyntaxError("'{' expected");
+        throw SyntaxAnalysisException("'{' expected");
     }
 
     this->scopes.push(scope);
@@ -192,7 +217,7 @@ NodeScope *Parser::parseScope() {
     this->scopes.pop();
 
     if (!checkForTokenTypeAndConsume(TokenType::closeCurly)) {
-        this->throwSyntaxError("'}' expected");
+        throw SyntaxAnalysisException("'}' expected");
     }
 
     return scope;
@@ -205,29 +230,29 @@ NodeFunction *Parser::tryParseFunction() {
 
     TokenType typeKeyword = this->lexer->currentAndProceedToken().type;
 
-    if (!this->typeMap.contains(typeKeyword)) {
-        this->throwSyntaxError("Function type expected");
+    if (!typeMap.contains(typeKeyword)) {
+        throw SyntaxAnalysisException("Function type expected");
     }
 
-    VariableType funcType = this->typeMap[typeKeyword];
+    VariableType funcType = typeMap[typeKeyword];
 
     bool ptr = checkForTokenType(TokenType::mult);
     if (ptr) this->lexer->currentAndProceedToken();
 
     if (ptr && funcType == VariableType::voidType) {
-        this->throwSemanticError("Cannot return pointer of type void");
+        throw SemanticAnalysisException("Cannot return pointer of type void");
     }
 
     identifierTokenExists();
     std::string funcName = this->lexer->currentAndProceedToken().val;
 
-    if (getFunction(funcName)) this->throwSemanticError("Redeclaration of the function '" + funcName + "'");
+    if (getFunction(funcName)) throw SemanticAnalysisException("Redeclaration of the function '" + funcName + "'");
 
     if (funcName == "main") {
         this->mainFunctionExists = true;
 
         if (ptr || funcType != VariableType::intType) {
-            this->throwSemanticError("Return value of function 'main' must be of type int");
+            throw SemanticAnalysisException("Return value of function 'main' must be of type int");
         }
     }
 
@@ -244,26 +269,15 @@ NodeFunction *Parser::tryParseFunction() {
 
 ProgramTree *Parser::parseProgram() {
     this->programTree = new ProgramTree();
+    ParserException::programTree = this->programTree;
 
     while (this->tryParseFunction());
 
     if (!this->mainFunctionExists) {
-        this->throwSemanticError("No 'main' function found");
+        throw SemanticAnalysisException("No 'main' function found");
     }
 
     return this->programTree;
-}
-
-void Parser::throwSyntaxError(const std::string &errorMsg) {
-    delete this->programTree;
-    throw CompilationException(
-            "[Parser - Syntax Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
-}
-
-void Parser::throwSemanticError(const std::string &errorMsg) {
-    delete this->programTree;
-    throw CompilationException(
-            "[Parser - Semantic Error] " + errorMsg + " On line " + std::to_string(this->lexer->currentLine));
 }
 
 bool Parser::checkForTokenType(TokenType type) {
@@ -284,7 +298,7 @@ bool Parser::checkForTokenTypeAndConsumeIfYes(TokenType type) {
 
 void Parser::identifierTokenExists() {
     if (!checkForTokenType(TokenType::identifier)) {
-        this->throwSyntaxError("Identifier expected");
+        throw SyntaxAnalysisException("Identifier expected");
     }
 }
 
@@ -319,7 +333,7 @@ Variable Parser::getVarCurrentScope(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
-    this->throwSemanticError("Use of undeclared identifier " + varName);
+    throw SemanticAnalysisException("Use of undeclared identifier " + varName);
 }
 
 Variable Parser::getVarScopeStack(const std::string &varName) {
@@ -327,11 +341,11 @@ Variable Parser::getVarScopeStack(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
-    for (auto param : this->programTree->functions.back()->params) {
+    for (auto param: this->programTree->functions.back()->params) {
         if (param.name == varName) return param;
     }
 
-    this->throwSemanticError("Use of undeclared identifier " + varName);
+    throw SemanticAnalysisException("Use of undeclared identifier " + varName);
 }
 
 NodeFunction *Parser::getFunction(const std::string &funcName) {

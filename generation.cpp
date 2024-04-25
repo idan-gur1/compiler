@@ -11,7 +11,6 @@ void Generator::generateProgram() {
                         "call main\n"
                         "movsx rdi, eax  ; exit code param\n"
                         "mov rax, 0x3c   ; exit code syscall code\n"
-//                        "mov rdi, 0\n"
                         "syscall\n";
 
     for (auto ilStmt: this->ilGenerator->ilStmts) {
@@ -22,8 +21,7 @@ void Generator::generateProgram() {
 
     if (outFile.fail()) {
         outFile.close();
-        throw CompilationException("[IL Generation - File Error] Error while opening the file "
-                                   + this->outFileName);
+        throw FileOpenException(this->outFileName);
     }
 
     outFile << this->programOut.str();
@@ -105,8 +103,6 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
     } else if (auto numericNeg = dynamic_cast<NumericNegExprP>(expr)) {
         convertUniExprToRegister(numericNeg->expr, reg);
         this->programOut << "neg " << reg << "\n";
-    } else if (auto functionCall = dynamic_cast<FunctionCallExprP>(expr)) {
-        // WON'T REACH HERE
     }
 }
 

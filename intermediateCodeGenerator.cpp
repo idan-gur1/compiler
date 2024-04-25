@@ -3,7 +3,6 @@
 //
 
 #include "intermediateCodeGenerator.h"
-#include "lexer.h"
 
 
 FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP funcCall) {
@@ -66,8 +65,24 @@ TempAssignmentTAStmt *ILGenerator::generateBinaryTempAssignmentIL(UniExprP uniLh
     return new TempAssignmentTAStmt(incCurrentTemp(), new BinaryExpr(uniLhs, uniRhs, op));
 }
 
+std::unordered_map<std::type_index, ExprOperator> ILGenerator::NodeExprToExprOperator = {
+        {typeid(NodeAddExpr),             ExprOperator::add},
+        {typeid(NodeSubExpr),             ExprOperator::sub},
+        {typeid(NodeMultExpr),            ExprOperator::mult},
+        {typeid(NodeDivExpr),             ExprOperator::div},
+        {typeid(NodeModuloExpr),          ExprOperator::mod},
+        {typeid(NodeLogicalOrExpr),       ExprOperator::logicalOr},
+        {typeid(NodeLogicalAndExpr),      ExprOperator::logicalAnd},
+        {typeid(NodeBoolEqualsExpr),      ExprOperator::equals},
+        {typeid(NodeBoolNotEqualsExpr),   ExprOperator::notEquals},
+        {typeid(NodeBiggerThanExpr),      ExprOperator::biggerThan},
+        {typeid(NodeBiggerThanEqualExpr), ExprOperator::biggerThanEquals},
+        {typeid(NodeLessThanExpr),        ExprOperator::lessThan},
+        {typeid(NodeLessThanEqualExpr),   ExprOperator::lessThanEquals},
+};
+
 void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
-    ExprOperator op = this->NodeExprToExprOperator[typeid(*binExpr)];
+    ExprOperator op = NodeExprToExprOperator[typeid(*binExpr)];
 
     auto lhs = dynamic_cast<TerminalNodeExprP>(binExpr->left);
     auto rhs = dynamic_cast<TerminalNodeExprP>(binExpr->right);
@@ -239,6 +254,22 @@ int ILGenerator::incCurrentTemp() {
     if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
     return currentTemp;
 }
+
+std::unordered_map<ExprOperator, std::string> ILGenerator::exprOperatorToStr = {
+        {ExprOperator::add,              " + "},
+        {ExprOperator::sub,              " - "},
+        {ExprOperator::mult,             " * "},
+        {ExprOperator::div,              " / "},
+        {ExprOperator::mod,              " % "},
+        {ExprOperator::logicalOr,        " || "},
+        {ExprOperator::logicalAnd,       " && "},
+        {ExprOperator::equals,           " == "},
+        {ExprOperator::notEquals,        " != "},
+        {ExprOperator::biggerThan,       " > "},
+        {ExprOperator::biggerThanEquals, " >= "},
+        {ExprOperator::lessThan,         " < "},
+        {ExprOperator::lessThanEquals,   " <= "},
+};
 
 std::string ILGenerator::ilExprToStr(ThreeAddressExprP taExpr) {
     std::stringstream strStream;

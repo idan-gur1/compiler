@@ -5,105 +5,86 @@
 #include "parser.h"
 
 
+NodeExpr *Parser::FactorByIdentifier(const Token &ident, bool ptrNotAllowed) {
+    if (checkForTokenType(TokenType::openParenthesis)) {
+        return parseFunctionCall(ident, false, ptrNotAllowed);
+    }
+
+    Variable var = this->getVarScopeStack(ident.val);
+
+    if (!var.ptrType && var.arrSize == 0) {
+        if (this->checkForTokenType(TokenType::openSquare)) {
+            throw SemanticAnalysisException("'" + var.name + "' is not subscriptable");
+        }
+
+        return new NodeVariableTerminal(var);
+    }
+
+    if (!this->checkForTokenType(TokenType::openSquare)) {
+        if (ptrNotAllowed) {
+            throw SemanticAnalysisException("Illegal use of '" + var.name + "'");
+        }
+
+        this->ptrUsedInExpr = true;
+
+        return new AddrNodeExpr(new NodeVariableTerminal(var));
+    }
+
+    return new NodeSubscriptableVariableTerminal(var, parseArrayBrackets());
+}
+
+NodeExpr *Parser::FactorByMultToken() {
+    identifierTokenExists();
+    Variable var = this->getVarScopeStack(this->lexer->currentAndProceedToken().val);
+
+    if (var.arrSize == 0 && !var.ptrType) {
+        throw SemanticAnalysisException("'" + var.name + "' cannot be dereferenced");
+    }
+
+    return new NodeSubscriptableVariableTerminal(var,
+                                                 new NodeImIntTerminal(Token(
+                                                         TokenType::immediateInteger, "0")));
+}
+
+NodeExpr *Parser::FactorByOpenParenthesis() {
+    NodeExprP innerExpr = this->parseExpr();
+
+    this->checkPointerUsage(innerExpr);
+
+    if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
+        throw SyntaxAnalysisException("')' expected");
+    }
+
+    return new NodeParenthesisExpr(innerExpr);
+}
+
 NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
-//    Token currentToken = this->lexer->currentAndProceedToken();
     Token currentToken = this->lexer->currentToken();
 
-    if (currentToken.type == TokenType::immediateInteger) { // Expr terminal
-        this->lexer->currentAndProceedToken();
-
+    if (this->checkForTokenTypeAndConsumeIfYes(TokenType::immediateInteger)) {
         return new NodeImIntTerminal(currentToken);
-    } else if (currentToken.type == TokenType::identifier) {  // Expr terminal
-        this->lexer->currentAndProceedToken();
-
-        if (NodeFunctionP func = getFunction(currentToken.val)) {
-            if (func->returnType == VariableType::voidType) {
-                this->throwSemanticError("Function of type void does not return any value");
-            }
-
-            std::vector<NodeExprP> params = parseParenthesisExprList();
-
-            validateFunctionCallParams(params, func);
-
-            if (func->returnPtr) {
-                if (ptrNotAllowed) {
-                    this->throwSemanticError("Illegal use of '" + func->name + "'");
-                }
-
-                this->ptrUsedInExpr = true;
-            }
-
-            return new NodeFunctionCall(func, params);
-        }
-
-        Variable var = this->getVarScopeStack(currentToken.val);
-
-        if (!var.ptrType && var.arrSize == 0) {
-            if (this->checkForTokenType(TokenType::openSquare)) {
-                this->throwSemanticError("'" + var.name + "' is not subscriptable");
-            }
-
-            return new NodeVariableTerminal(var);
-        }
-
-        if (!this->checkForTokenType(TokenType::openSquare)) {
-            if (ptrNotAllowed) {
-                this->throwSemanticError("Illegal use of '" + var.name + "'");
-            }
-
-            this->ptrUsedInExpr = true;
-
-            return new AddrNodeExpr(new NodeVariableTerminal(var));
-        }
-
-        return new NodeSubscriptableVariableTerminal(var, parseArrayBrackets());
-    } else if (currentToken.type == TokenType::mult) {
-        this->lexer->currentAndProceedToken();
-
-        identifierTokenExists();
-        Variable var = this->getVarScopeStack(this->lexer->currentAndProceedToken().val);
-
-        if (var.arrSize == 0 && !var.ptrType) {
-            this->throwSemanticError("'" + var.name + "' cannot be dereferenced");
-        }
-
-        return new NodeSubscriptableVariableTerminal(var,
-                                                     new NodeImIntTerminal(Token(
-                                                             TokenType::immediateInteger, "0")));
-    } else if (currentToken.type == TokenType::minus) {
-        this->lexer->currentAndProceedToken();
-
+    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::identifier)) {
+        return FactorByIdentifier(currentToken, ptrNotAllowed);
+    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::mult)) {
+        return FactorByMultToken();
+    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::minus)) {
         return new NodeNumericNegExpr(this->parseFactor(true));
-    } else if (currentToken.type == TokenType::exclamation) {
-        this->lexer->currentAndProceedToken();
-
+    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::exclamation)) {
         return new NodeLogicalNotExpr(this->parseFactor(true));
-    } else if (currentToken.type == TokenType::openParenthesis) {
-        this->lexer->currentAndProceedToken();
-
-        NodeExprP innerExpr = this->parseExpr();
-
-        this->checkPointerUsage(innerExpr);
-
-        if (!checkForTokenTypeAndConsume(TokenType::closeParenthesis)) {
-            this->throwSyntaxError("')' expected");
-        }
-
-        return new NodeParenthesisExpr(innerExpr);
+    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::openParenthesis)) {
+        return FactorByOpenParenthesis();
     }
 
-    this->throwSyntaxError("Expression expected");
-
-    return nullptr;
+    throw SyntaxAnalysisException("Expression expected");
 }
 
 NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftTerm = this->parseFactor();
@@ -136,7 +117,7 @@ NodeExpr *Parser::parseTerm(NodeExprP leftSibling, TokenType siblingOpType) {
 
 NodeExpr *Parser::parseNumericExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftExpr = this->parseTerm();
@@ -166,7 +147,7 @@ NodeExpr *Parser::parseNumericExpr(NodeExprP leftSibling, TokenType siblingOpTyp
 
 NodeExpr *Parser::parseRelationalExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftExpr = this->parseNumericExpr();
@@ -202,7 +183,7 @@ NodeExpr *Parser::parseRelationalExpr(NodeExprP leftSibling, TokenType siblingOp
 
 NodeExpr *Parser::parseEqualityExpr(NodeExprP leftSibling, TokenType siblingOpType) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftExpr = this->parseRelationalExpr();
@@ -232,7 +213,7 @@ NodeExpr *Parser::parseEqualityExpr(NodeExprP leftSibling, TokenType siblingOpTy
 
 NodeExpr *Parser::parseLogicalAndExpr(NodeExprP leftSibling) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftExpr = this->parseEqualityExpr();
@@ -256,7 +237,7 @@ NodeExpr *Parser::parseLogicalAndExpr(NodeExprP leftSibling) {
 
 NodeExpr *Parser::parseLogicalOrExpr(NodeExprP leftSibling) {
     if (!this->lexer->hasNextToken()) {
-        this->throwSyntaxError("Expression expected");
+        throw SyntaxAnalysisException("Expression expected");
     }
 
     NodeExprP leftExpr = this->parseLogicalAndExpr();
@@ -287,7 +268,7 @@ NodeExpr *Parser::parseAddrExpr() {
 
     if (!varTerminal) {
         delete addressable;
-        this->throwSemanticError("Unaddressable expression");
+        throw SemanticAnalysisException("Unaddressable expression");
     }
 
     this->ptrUsedInExpr = true;
@@ -308,6 +289,6 @@ NodeExpr *Parser::parseExpr() {
 void Parser::checkPointerUsage(NodeExprP expr) {
     if (this->ptrUsedInExpr) {
         delete expr;
-        this->throwSemanticError("Invalid use of pointers");
+        throw SemanticAnalysisException("Invalid use of pointers");
     }
 }

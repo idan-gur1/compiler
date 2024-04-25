@@ -7,8 +7,8 @@
 #include <vector>
 #include <unordered_set>
 #include <variant>
-
-#include "lexer.h"
+#include <iostream>
+#include "tokenDefine.h"
 
 enum class VariableType {
     voidType,  // For functions
@@ -253,20 +253,6 @@ public:
     }
 };
 
-class NodePointerValueAssignmentStmt : public NodeStmt {
-public:
-    Variable pointer;
-    NodeExpr *expr;
-
-    NodePointerValueAssignmentStmt(Variable ptr, NodeExpr *expr) : pointer(std::move(ptr)) {
-        this->expr = expr;
-    }
-
-    ~NodePointerValueAssignmentStmt() override {
-        delete expr;
-    };
-};
-
 class NodeArrayAssignmentStmt : public NodeStmt {
 public:
     Variable array;
@@ -386,29 +372,6 @@ public:
     }
 };
 
-class NodePointerAddrAssignmentStmt : public NodeStmt {
-public:
-    Variable pointer;
-//    AddrNodeExpr *addressable;
-    std::variant<NodeFunctionCall *, AddrNodeExpr *> addressable;
-
-    NodePointerAddrAssignmentStmt(Variable ptr, AddrNodeExpr *addressable) : pointer(std::move(ptr)) {
-        this->addressable = addressable;
-    }
-
-    NodePointerAddrAssignmentStmt(Variable ptr, NodeFunctionCall *addressable) : pointer(std::move(ptr)) {
-        this->addressable = addressable;
-    }
-
-    ~NodePointerAddrAssignmentStmt() override {
-        if (holds_alternative<NodeFunctionCall *>(addressable)) {
-            delete get<NodeFunctionCall *>(addressable);
-        } else if (holds_alternative<AddrNodeExpr *>(addressable)) {
-            delete get<AddrNodeExpr *>(addressable);
-        }
-    };
-};
-
 class ProgramTree {
 public:
     std::vector<NodeFunction *> functions;
@@ -431,8 +394,6 @@ typedef NodeIf *NodeIfP;
 typedef NodeWhile *NodeWhileP;
 typedef NodeReturnStmt *NodeReturnStmtP;
 typedef NodePrimitiveAssignmentStmt *NodePrimitiveAssignmentStmtP;
-typedef NodePointerAddrAssignmentStmt *NodePointerAddrAssignmentStmtP;
-typedef NodePointerValueAssignmentStmt *NodePointerValueAssignmentStmtP;
 typedef NodeArrayAssignmentStmt *NodeArrayAssignmentStmtP;
 
 typedef NodeExpr *NodeExprP;
@@ -444,18 +405,6 @@ typedef NodeNumericNegExpr *NodeNumericNegExprP;
 typedef TerminalNodeExpr *TerminalNodeExprP;
 typedef AddrNodeExpr *AddrNodeExprP;
 typedef NodeFunctionCall *NodeFunctionCallP;
-typedef NodeAddExpr *NodeAddExprP;
-typedef NodeSubExpr *NodeSubExprP;
-typedef NodeMultExpr *NodeMultExprP;
-typedef NodeDivExpr *NodeDivExprP;
-typedef NodeLogicalOrExpr *NodeLogicalOrExprP;
-typedef NodeLogicalAndExpr *NodeLogicalAndExprP;
-typedef NodeBoolEqualsExpr *NodeBoolEqualsExprP;
-typedef NodeBoolNotEqualsExpr *NodeBoolNotEqualsExprP;
-typedef NodeBiggerThanExpr *NodeBiggerThanExprP;
-typedef NodeBiggerThanEqualExpr *NodeBiggerThanEqualExprP;
-typedef NodeLessThanExpr *NodeLessThanExprP;
-typedef NodeLessThanEqualExpr *NodeLessThanEqualExprP;
 typedef NodeImIntTerminal *NodeImIntTerminalP;
 typedef NodeVariableTerminal *NodeVariableTerminalP;
 typedef NodeSubscriptableVariableTerminal *NodeSubscriptableVariableTerminalP;
