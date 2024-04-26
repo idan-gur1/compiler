@@ -6,17 +6,21 @@
 
 
 FunctionCallExpr *ILGenerator::generateFunctionCallExprIL(NodeFunctionCallP funcCall) {
+    // Save the current temporary counter value
     int tempCurrentTemp = this->currentTemp;
 
+    // Check if the function is a built-in function and mark it as used
     if (funcCall->function->scope == nullptr) {
         builtinFunctionsUsed.insert(funcCall->function->name);
     }
 
+    // Generate function call parameter pushing statements for each parameter
     for (int i = funcCall->function->params.size() - 1; i >= 0; --i) {
         this->ilStmts.push_back(new FunctionParamPushStmt(funcCall->function->params[i].type,
                                                           funcCall->function->params[i].ptrType,
                                                           this->generateExprIL(funcCall->params[i])));
 
+        // Reset currentTemp to the value before parameter generation
         this->currentTemp = tempCurrentTemp;
     }
 
@@ -29,9 +33,11 @@ UniExpr *ILGenerator::convertTerminalToUniExpr(TerminalNodeExprP terminalExpr) {
         return new ImIntVal(imInt->value);
     } else if (auto subVar = dynamic_cast<NodeSubscriptableVariableTerminalP>(terminalExpr)) {
         if (auto innerNum = dynamic_cast<NodeImIntTerminalP>(subVar->index)) {
+            // Subscript with an immediate integer index
             return new SubscriptableVariableVal(subVar->variable, new ImIntVal(innerNum->value));
         }
 
+        // Subscript with a numeric expression index amd return as a temporary to keep as three address code
         UniExprP innerUni = generateNumericExprIL(subVar->index);
 
         if (!dynamic_cast<UniTempP>(innerUni)) incCurrentTemp();
@@ -86,27 +92,36 @@ std::unordered_map<std::type_index, ExprOperator> ILGenerator::NodeExprToExprOpe
 };
 
 void ILGenerator::generateBinaryExprIL(BinaryNodeExprP binExpr) {
+    // Determine the operator of the binary expression
     ExprOperator op = NodeExprToExprOperator[typeid(*binExpr)];
 
+    // Get pointers to the left and right terminal nodes of the binary expression
     auto lhs = dynamic_cast<TerminalNodeExprP>(binExpr->left);
     auto rhs = dynamic_cast<TerminalNodeExprP>(binExpr->right);
 
+    // Pointers to store the converted intermediate expressions for the left and right operands
     UniExprP uniLhs, uniRhs;
 
+    // Convert operands to intermediate representations based on their types
     if (lhs && rhs) {
+        // Both operands are terminal nodes
         uniLhs = this->convertTerminalToUniExpr(lhs);
         uniRhs = this->convertTerminalToUniExpr(rhs);
     } else if (lhs) {
+        // Only the left operand is a terminal node
         uniLhs = this->convertTerminalToUniExpr(lhs);
         uniRhs = generateNumericExprIL(binExpr->right);
     } else if (rhs) {
+        // Only the right operand is a terminal node
         uniLhs = generateNumericExprIL(binExpr->left);
         uniRhs = this->convertTerminalToUniExpr(rhs);
     } else {
+        // Both operands are non-terminal nodes
         uniLhs = generateNumericExprIL(binExpr->left);
         uniRhs = generateNumericExprIL(binExpr->right);
     }
 
+    // Generate a temporary assignment statement with the converted operands and operator
     this->ilStmts.push_back(generateBinaryTempAssignmentIL(uniLhs, uniRhs, op));
 }
 
@@ -130,7 +145,6 @@ UniExpr *ILGenerator::generateNumericExprIL(NodeExprP expr) {
         return generateNumericExprIL(paren->expr);
     } else if (auto unary = dynamic_cast<UnaryNodeExprP>(expr)) {
         return this->generateUnaryExprIL(unary);
-//        return new UniTemp(this->currentTemp);
     } else if (auto terminal = dynamic_cast<TerminalNodeExprP>(expr)) {
         return this->convertTerminalToUniExpr(terminal);
     }
@@ -142,6 +156,7 @@ ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
     if (auto addr = dynamic_cast<AddrNodeExprP>(expr)) {
         VariableVal *ret;
 
+        // Check if subscriptable and get the index if yes
         if (auto sub = dynamic_cast<NodeSubscriptableVariableTerminalP>(addr->target)) {
             ret = new SubscriptableVariableVal(sub->variable, generateNumericExprIL(sub->index));
         } else {
@@ -155,6 +170,7 @@ ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
 }
 
 void ILGenerator::generateStmtIL(NodeStmtP stmt) {
+    // set the temporary counter for the expressions to zero for a new expression
     currentTemp = 0;
 
     if (auto primitiveAssignmentStmt = dynamic_cast<NodePrimitiveAssignmentStmtP>(stmt)) {
@@ -168,34 +184,51 @@ void ILGenerator::generateStmtIL(NodeStmtP stmt) {
     } else if (auto functionCallStmt = dynamic_cast<NodeFunctionCallP>(stmt)) {
         this->ilStmts.push_back(generateFunctionCallExprIL(functionCallStmt));
     } else if (auto ifStmt = dynamic_cast<NodeIfP>(stmt)) {
+        // Create unique labels for the 'if' statement
         std::string ifName = currentFunctionName + "If" + std::to_string(++currentIfId);
         std::string endLabel = ifName + "End";
         std::string elseLabel = ifStmt->elseBlock ? ifName + "Else" : endLabel;
 
         this->ilStmts.push_back(new LabelStmt(ifName));
+
+        // Emit conditional jump based on the 'if' condition
         this->ilStmts.push_back(new GotoIfZeroStmt(elseLabel, generateNumericExprIL(ifStmt->expr)));
+
+        // Generate IL for the 'if' block
         generateScopeIL(ifStmt->ifBlock);
 
         if (ifStmt->elseBlock) {
+            // Emit a jump to the end label after the 'if' block if an 'else' block exists
             this->ilStmts.push_back(new GotoStmt(endLabel));
             this->ilStmts.push_back(new LabelStmt(elseLabel));
+
+            // Generate IL for the 'else' block
             generateScopeIL(ifStmt->elseBlock);
         }
 
         this->ilStmts.push_back(new LabelStmt(endLabel));
     } else if (auto whileStmt = dynamic_cast<NodeWhileP>(stmt)) {
+        // Create unique labels for the 'while' statement
         std::string whileName = currentFunctionName + "While" + std::to_string(++currentWhileId);
         std::string conditionLabel = whileName + "Condition";
         std::string bodyLabel = whileName + "Body";
 
         this->ilStmts.push_back(new LabelStmt(whileName));
+
+        // Emit conditional jump to the condition label if it is a regular while
         if (!whileStmt->isDoWhile) this->ilStmts.push_back(new GotoStmt(conditionLabel));
+
         this->ilStmts.push_back(new LabelStmt(bodyLabel));
+
+        // Generate IL for the loop body
         generateScopeIL(whileStmt->codeBlock);
+
         this->ilStmts.push_back(new LabelStmt(conditionLabel));
 
+        // Could be affected by the recursive call to 'generateScopeIL'
         currentTemp = 0;
 
+        // Emit conditional jump back to the loop body if the condition is true
         this->ilStmts.push_back(new GotoIfNotZeroStmt(bodyLabel, generateNumericExprIL(whileStmt->expr)));
     } else if (auto returnStmt = dynamic_cast<NodeReturnStmtP>(stmt)) {
         if (returnStmt->expr) {
@@ -220,13 +253,18 @@ void ILGenerator::generateScopeIL(NodeScopeP scope) {
 
 void ILGenerator::generateFunctionIL(NodeFunctionP function) {
     auto funcDecStmt = new FunctionDeclarationStmt(function->name, function->params);
+
+    // Reset temporary counters and identifiers
     this->maxTemp = 0;
     this->currentIfId = 0;
     this->currentWhileId = 0;
     this->currentFunctionName = function->name;
 
     this->ilStmts.push_back(funcDecStmt);
+
     this->generateScopeIL(function->scope);
+
+    // Mark the end of the function
     this->ilStmts.push_back(new LabelStmt(function->name + "End"));
     this->ilStmts.push_back(new FunctionExitStmt());
 
@@ -235,6 +273,7 @@ void ILGenerator::generateFunctionIL(NodeFunctionP function) {
 }
 
 void ILGenerator::generateProgramIL() {
+    // Generate intermediate code for each function in the program
     for (auto funcPtr: this->program->functions) {
         if (funcPtr->scope != nullptr) {
             this->generateFunctionIL(funcPtr);
@@ -245,9 +284,10 @@ void ILGenerator::generateProgramIL() {
 
     if (outFile.fail()) {
         outFile.close();
-        throw CompilationException("[IL Generation - File Error] Error while opening the file " + this->outfileName);
+        throw FileOpenException(this->outfileName);
     }
 
+    // Write each generated statement to the output file
     for (ThreeAddressStmt *tasP: this->ilStmts) {
         outFile << ilStmtToStr(tasP);
     }
@@ -257,7 +297,9 @@ void ILGenerator::generateProgramIL() {
 }
 
 int ILGenerator::incCurrentTemp() {
+    // Increment currentTemp and update maxTemp if currentTemp exceeds the previous maximum
     if (++currentTemp > this->maxTemp) this->maxTemp = currentTemp;
+
     return currentTemp;
 }
 

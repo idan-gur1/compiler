@@ -311,36 +311,36 @@ void Parser::identifierTokenExists() {
 
 std::optional<Variable> Parser::varExistsScopeStack(const std::string &varName) {
     std::stack<NodeScopeP> scopesCopy = this->scopes;
+    // Iterate over scopes in the stack
     while (!scopesCopy.empty()) {
+        // Iterate through the variables in each scope
         for (auto var: scopesCopy.top()->vars) {
+            // Check if the variable name matches the provided name
+            // and return optional containing the variable if yes
             if (var.name == varName) return var;
         }
 
         scopesCopy.pop();
     }
 
+    // If the variable is not found, return an empty optional
     return {};
 }
 
 std::optional<Variable> Parser::varExistsCurrentScope(const std::string &varName) {
+    // Iterate through the variables in the current scope
     for (auto var: this->scopes.top()->vars) {
+        // Check if the variable name matches the provided name
+        // and return optional containing the variable if yes
         if (var.name == varName) return var;
     }
 
+    // If the variable is not found, return an empty optional
     return {};
 }
 
 void Parser::addVarToCurrentScope(const Variable &var) {
-//    this->scopes.top()->vars.insert(var);
     this->scopes.top()->vars.push_back(var);
-}
-
-Variable Parser::getVarCurrentScope(const std::string &varName) {
-    std::optional<Variable> var = varExistsCurrentScope(varName);
-
-    if (var.has_value()) return var.value();
-
-    throw SemanticAnalysisException("Use of undeclared identifier " + varName);
 }
 
 Variable Parser::getVarScopeStack(const std::string &varName) {
@@ -348,6 +348,7 @@ Variable Parser::getVarScopeStack(const std::string &varName) {
 
     if (var.has_value()) return var.value();
 
+    // Iterate through the variables in the function params if not found in the scope stack
     for (auto param: this->programTree->functions.back()->params) {
         if (param.name == varName) return param;
     }

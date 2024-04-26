@@ -157,7 +157,7 @@ NodeStmt *Parser::stmtWhile(bool isDo) {
 
     if (isDo) {
         if (!this->checkForTokenTypeAndConsume(TokenType::whileKeyword)) {
-            throw SemanticAnalysisException("While keyword expected");
+            throw SyntaxAnalysisException("While keyword expected");
         }
 
         expr = parseParenthesisExpr();

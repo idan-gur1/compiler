@@ -286,4 +286,29 @@ public:
     FunctionExitStmt() = default;
 };
 
+typedef ThreeAddressExpr *ThreeAddressExprP;
+typedef UniExpr *UniExprP;
+typedef UniTemp *UniTempP;
+typedef ImIntVal *ImIntValP;
+typedef VariableVal *VariableValP;
+typedef SubscriptableVariableVal *SubscriptableVariableValP;
+typedef LogicalNotExpr *LogicalNotExprP;
+typedef NumericNegExpr *NumericNegExprP;
+typedef AddrExpr *AddrExprP;
+typedef BinaryExpr *BinaryExprP;
+typedef ThreeAddressStmt *ThreeAddressStmtP;
+typedef TempAssignmentTAStmt *TempAssignmentTAStmtP;
+typedef VarAssignmentTAStmt *VarAssignmentTAStmtP;
+typedef FunctionParamPushStmt *FunctionParamPushStmtP;
+typedef FunctionCallExpr *FunctionCallExprP;
+typedef LabelStmt *LabelStmtP;
+typedef GotoStmt *GotoStmtP;
+typedef GotoIfZeroStmt *GotoIfZeroStmtP;
+typedef GotoIfNotZeroStmt *GotoIfNotZeroStmtP;
+typedef SetReturnValueStmt *SetReturnValueStmtP;
+typedef ScopeEnterStmt *ScopeEnterStmtP;
+typedef ScopeExitStmt *ScopeExitStmtP;
+typedef FunctionDeclarationStmt *FunctionDeclarationStmtP;
+typedef FunctionExitStmt *FunctionExitStmtP;
+
 #endif //COMPILER_THREEADDRESSEXPRESSIONSANDSTATEMENTS_H
