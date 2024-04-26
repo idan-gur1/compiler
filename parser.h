@@ -8,6 +8,7 @@
 #include <optional>
 #include <vector>
 #include <unordered_map>
+#include "builtinFunctions.h"
 #include "treeNodes.h"
 #include "lexer.h"
 
@@ -65,8 +66,6 @@ public:
     NodeExpr *parseExpr();
 
 private:
-    // A vector of tuples representing built-in functions with their names, return types, pointer types, and parameters
-    static std::vector<std::tuple<std::string, VariableType, bool, std::vector<Variable>>> builtInFunctions;
     // An unordered map mapping token types to variable types.
     static std::unordered_map<TokenType, VariableType> typeMap;
 
@@ -443,13 +442,6 @@ private:
      * semantic error is met in code scope.
      */
     NodeStmt *stmtWhile(bool isDo = false);
-};
-
-inline std::vector<std::tuple<std::string, VariableType, bool,
-        std::vector<Variable>>> Parser::builtInFunctions = {
-        {"outputChar",VariableType::voidType, false, {Variable("", VariableType::charType, false)}},
-        {"inputChar", VariableType::charType, false, {}},
-        {"exit", VariableType::voidType, false, {Variable("", VariableType::intType, false)}},
 };
 
 inline std::unordered_map<TokenType, VariableType> Parser::typeMap = {

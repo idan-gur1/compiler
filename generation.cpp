@@ -59,35 +59,40 @@ void Generator::generateProgram() {
 }
 
 std::string Generator::movTo64BitReg(const std::string &reg, const std::string &val, int size) {
-    std::string movType = "mov ";
+    // Determine the appropriate move instruction based on the size of the value
+    std::string movType = (size < BIT_64_REG_SIZE) ? "movsx " : "mov ";
 
-    if (size < BIT_64_REG_SIZE) {
-        movType = "movsx ";
-    }
-
+    // Construct the assembly instruction string
     return movType + reg + ", " + val;
 }
 
 std::string Generator::getStackAddr(const VariableStackData &var) {
+    // If positive stack position: "rbp + stackPos"
     if (var.stackPos > 0) {
         return "rbp + " + std::to_string(var.stackPos);
     }
 
+    // Negative stack position: "rbp - |stackPos|"
     return "rbp - " + std::to_string(std::abs(var.stackPos));
 }
 
 std::string Generator::getSubscriptableStackPosition(SubscriptableVariableValP subVar,
                                                      const std::string &freeReg) {
+    // Retrieve the current VariableStackData for the variable name
     VariableStackData varData = this->variableStack[subVar->var.name].top();
+    // Initialize typeSize with the size of the variable's type, if the
+    // var is a pointer then it would be changed to the side of the type
     int typeSize = varData.varSize;
     std::string varBaseAddr = getStackAddr(varData);
 
+    // Load the address pointed to by the pointer into the freeReg register if the variable is a pointer
     if (subVar->var.ptrType) {
         this->programOut << "mov " << freeReg << ", QWORD [" << varBaseAddr << "]\n";
         varBaseAddr = freeReg;
         typeSize = typeSizes[subVar->var.type];
     }
 
+    // Determine the offset used for subscripting
     std::string offset = "rcx";
 
     if (auto imIntIndex = dynamic_cast<ImIntValP>(subVar->index)) {
@@ -96,15 +101,19 @@ std::string Generator::getSubscriptableStackPosition(SubscriptableVariableValP s
         convertUniExprToRegister(subVar->index, "rcx");
     }
 
+    // Return the memory location of the subscripted variable
     return "[" + varBaseAddr + " + " + std::to_string(typeSize) + " * " + offset + "]";
 }
 
 void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) {
     if (auto imInt = dynamic_cast<ImIntValP>(expr)) {
+        // If the expression is an immediate integer value (ImIntVal), move the value to the register.
         this->programOut << "mov " << reg << ", " << imInt->value << "\n";
     } else if (auto temp = dynamic_cast<UniTempP>(expr)) {
+        // If the expression is a temporary (UniTemp), load its value from the stack into the register.
         this->programOut << "mov " << reg << ", QWORD [rbp - " << (temp->id * TEMP_SIZE) << "]\n";
     } else if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr)) {
+        // If the expression is a subscriptable variable, calculate its address and move the value to the register
         VariableStackData varData = this->variableStack[subVar->var.name].top();
 
         int typeSize = varData.varSize;
@@ -118,6 +127,7 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
 
         this->programOut << movTo64BitReg(reg, varAddr, typeSize) << "\n";
     } else if (auto var = dynamic_cast<VariableValP>(expr)) {
+        // If the expression is a variable, load its value from the stack into the register
         VariableStackData varData = this->variableStack[var->var.name].top();
 
         std::string varAddr = sizeIdentifiers[varData.varSize] +
@@ -125,11 +135,13 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
 
         this->programOut << movTo64BitReg(reg, varAddr, varData.varSize) << "\n";
     } else if (auto logicalNot = dynamic_cast<LogicalNotExprP>(expr)) {
+        // If the expression is a logical negation, evaluate the expression and set the register based on the result
         convertUniExprToRegister(logicalNot->expr, reg);
         this->programOut << "test " << reg << ", " << reg << "\n";
         this->programOut << "setz dl\n";
         this->programOut << "movzx " << reg << " dl\n";
     } else if (auto numericNeg = dynamic_cast<NumericNegExprP>(expr)) {
+        // If the expression is a numeric negation, negate the value and store it in the register
         convertUniExprToRegister(numericNeg->expr, reg);
         this->programOut << "neg " << reg << "\n";
     }
@@ -137,15 +149,18 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
 
 void Generator::convertAddrExprToRegister(AddrExprP expr, const std::string &reg) {
     if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr->addressable)) {
+        // If subscriptable then used the 'getSubscriptableStackPosition' to get the address
         std::string stackPos = getSubscriptableStackPosition(subVar, reg);
         this->programOut << "lea " << reg << ", " << stackPos << "\n";
     } else {
+        // Otherwise load as a regular variable
         Variable var = expr->addressable->var;
         VariableStackData varData = this->variableStack[var.name].top();
 
         std::string varBaseAddr = getStackAddr(varData);
 
         if (var.ptrType) {
+            // If the variable is a pointer then the address is its value
             this->programOut << "mov " << reg << ", QWORD [" << varBaseAddr << "]\n";
         } else {
             this->programOut << "lea " << reg << ", [" << varBaseAddr << "]\n";
@@ -193,12 +208,15 @@ std::unordered_map<ExprOperator, std::string> Generator::BinaryExprToAsmStrSteps
 };
 
 void Generator::convertBinaryExprToRegister(BinaryExprP expr) {
+    // Convert the left and right operands of the binary expression to registers
     convertUniExprToRegister(expr->left, "rax");
     convertUniExprToRegister(expr->right, "rbx");
 
+    // Determine the assembly code corresponding to the binary operation
     if (BinaryExprToAsmStrSteps.contains(expr->op)) {
         this->programOut << BinaryExprToAsmStrSteps[expr->op];
     } else if (expr->op == ExprOperator::logicalOr) {
+        // Generate assembly code for logical OR operation with unique labels
         std::string orTrue = "orTrue" + std::to_string(++this->labelCount);
         std::string orFalse = "orFalse" + std::to_string(this->labelCount);
         std::string orEnd = "orEnd" + std::to_string(this->labelCount);
@@ -214,6 +232,7 @@ void Generator::convertBinaryExprToRegister(BinaryExprP expr) {
                          "mov rax, 0\n" <<
                          orEnd << ":\n";
     } else if (expr->op == ExprOperator::logicalAnd) {
+        // Generate assembly code for logical AND operation with unique labels
         std::string andFalse = "andFalse" + std::to_string(++this->labelCount);
         std::string andEnd = "andEnd" + std::to_string(this->labelCount);
 
@@ -237,8 +256,6 @@ void Generator::convertTAExprToRaxRegister(ThreeAddressExprP expr) {
     } else if (auto binary = dynamic_cast<BinaryExprP>(expr)) {
         convertBinaryExprToRegister(binary);
     }
-
-    //return "";
 }
 
 void Generator::convertTAStmtToAsm(ThreeAddressStmtP taStmt) {
@@ -274,6 +291,7 @@ void Generator::convertTAStmtToAsm(ThreeAddressStmtP taStmt) {
 
 void Generator::convertTempAssignmentToAsm(TempAssignmentTAStmtP tempAssignment) {
     if (auto funcCall = dynamic_cast<FunctionCallExprP>(tempAssignment->expr)) {
+        // Convert the function call to assembly
         generateAsmFunctionCall(funcCall->functionName);
 
         int retSize = sizeByTypeAndPtr(funcCall->retType, funcCall->retPtr, 0);
@@ -282,9 +300,12 @@ void Generator::convertTempAssignmentToAsm(TempAssignmentTAStmtP tempAssignment)
             this->programOut << "movsx rax, " << getAxRegisterBySize(retSize) << "\n";
         }
 
+        // Restore the Stack Pointer counter to the state before the
+        // function call, changed by the function push params
         currentRelativeSP -= FuncParamsOffsetSP;
         FuncParamsOffsetSP = 0;
     } else {
+        // Convert the expression to the 'rax' register
         convertTAExprToRaxRegister(tempAssignment->expr);
     }
 
@@ -292,10 +313,13 @@ void Generator::convertTempAssignmentToAsm(TempAssignmentTAStmtP tempAssignment)
 }
 
 void Generator::convertVarAssignmentToAsm(VarAssignmentTAStmtP varAssignmentStmt) {
+    // Convert the expression to the 'rax' register
     convertTAExprToRaxRegister(varAssignmentStmt->expr);
 
+    // Retrieve the current VariableStackData for the variable name
     VariableStackData varData = this->variableStack[varAssignmentStmt->var->var.name].top();
 
+    // Determine the address and size of the assigned variable on the stack
     std::string varStackAddr = "[" + getStackAddr(varData) + "]";
 
     int typeSize = varData.varSize;
@@ -313,22 +337,30 @@ void Generator::convertVarAssignmentToAsm(VarAssignmentTAStmtP varAssignmentStmt
 }
 
 void Generator::convertFunctionParamPushToAsm(FunctionParamPushStmtP funcParamPushStmt) {
+    // Convert the expression to the 'rax' register
     convertTAExprToRaxRegister(funcParamPushStmt->expr);
 
+    // Determine the size to push onto the stack based on the variable type and pointer status
     int sizeToPush = sizeByTypeAndPtr(funcParamPushStmt->varType, funcParamPushStmt->isPtr, 0);
 
+    // Update the current relative stack pointer
     currentRelativeSP += sizeToPush;
+    // Update the size of the offset of the params
     FuncParamsOffsetSP += sizeToPush;
 
+    // Generate assembly code to adjust the stack pointer and move the value onto the stack
     this->programOut << "sub rsp, " << sizeToPush << "\n";
-
     this->programOut << "mov " << sizeIdentifiers[sizeToPush]
                      << " [rbp - " << currentRelativeSP << "], "
                      << getAxRegisterBySize(sizeToPush) << "\n";
 }
 
 void Generator::convertFunctionCallToAsm(FunctionCallExprP functionCallStmt) {
+    // Convert the function call to assembly
     generateAsmFunctionCall(functionCallStmt->functionName);
+
+    // Restore the Stack Pointer counter to the state before the
+    // function call, changed by the function push params
     currentRelativeSP -= FuncParamsOffsetSP;
     FuncParamsOffsetSP = 0;
 }
@@ -342,6 +374,7 @@ void Generator::convertGotoToAsm(GotoStmtP gotoStmt) {
 }
 
 void Generator::convertGotoIfZeroToAsm(GotoIfZeroStmtP gotoIfZeroStmt) {
+    // Convert the expression to the 'rax' register
     convertTAExprToRaxRegister(gotoIfZeroStmt->expr);
 
     this->programOut << "test rax, rax\n"
@@ -349,6 +382,7 @@ void Generator::convertGotoIfZeroToAsm(GotoIfZeroStmtP gotoIfZeroStmt) {
 }
 
 void Generator::convertGotoIfNotZeroToAsm(GotoIfNotZeroStmtP gotoIfNotZeroStmt) {
+    // Convert the expression to the 'rax' register
     convertTAExprToRaxRegister(gotoIfNotZeroStmt->expr);
 
     this->programOut << "test rax, rax\n"
@@ -356,39 +390,50 @@ void Generator::convertGotoIfNotZeroToAsm(GotoIfNotZeroStmtP gotoIfNotZeroStmt) 
 }
 
 void Generator::convertSetReturnValueToAsm(SetReturnValueStmtP setReturnValueStmt) {
+    // Convert the expression to the 'rax' register
     convertTAExprToRaxRegister(setReturnValueStmt->expr);
 }
 
 void Generator::convertScopeEnterToAsm(ScopeEnterStmtP scopeEnterStmt) {
+    // Initialize variables to track frame size and frame variables
     std::unordered_set<std::string> frameVars;
     int frameSize = 0;
 
+    // Process each variable in the scope
     for (auto &var: scopeEnterStmt->vars) {
         int varSize = sizeByTypeAndPtr(var.type, var.ptrType, var.arrSize);
 
+        // Add variable to frame variables and update frame size
         frameVars.insert(var.name);
         frameSize += varSize;
 
+        // Update the stack pointer to allocate space for the variable
         currentRelativeSP += varSize;
+        // Push variable information to the variable stack
         variableStack[var.name].push(VariableStackData(-currentRelativeSP,
                                                        sizeByTypeAndPtr(var.type,
                                                                         var.ptrType, 0)));
     }
 
+    // Create a new scope frame and push it onto the scope frame stack
     scopeFrameStack.push(ScopeFrame(frameSize, frameVars));
 
+    // If frame size is greater than zero, adjust the stack pointer (rsp)
     if (frameSize > 0) {
         this->programOut << "sub rsp, " << frameSize << "\n";
     }
 }
 
 void Generator::convertScopeExitToAsm() {
+    // Retrieve the top scope frame from the scope frame stack
     ScopeFrame scopeFrame = scopeFrameStack.top();
 
+    // Remove variables of the exiting scope from the variable stack
     for (auto &frameVar: scopeFrame.frameVars) {
         variableStack[frameVar].pop();
     }
 
+    // If the frame size is greater than zero, adjust the stack pointer (rsp) to deallocate stack space
     if (scopeFrame.frameSize > 0) {
         currentRelativeSP -= scopeFrame.frameSize;
         this->programOut << "add rsp, " << scopeFrame.frameSize << "\n";
@@ -398,20 +443,25 @@ void Generator::convertScopeExitToAsm() {
 }
 
 void Generator::convertFunctionDeclarationToAsm(FunctionDeclarationStmtP functionDeclarationStmt) {
-    variableStack.clear(); // from last function
+    // Clear the variable stack to prepare for the new function
+    variableStack.clear();
 
+    // Generate assembly code for function prologue
     this->programOut << functionDeclarationStmt->name << ":     ; FUNCTION\n"
                      << "cmp r8, " << STACK_OVERFLOW_LIMIT << "\n"
                                                               "jae _overflow\n"
                                                               "push rbp\n"
                                                               "mov rbp, rsp\n";
 
+    // Calculate the size of local temporaries needed for the function
     currentRelativeSP = functionDeclarationStmt->maxTemp * TEMP_SIZE;
 
+    // Allocate stack space for local temporaries if needed
     if (currentRelativeSP > 0) {
         this->programOut << "sub rsp, " << currentRelativeSP << "\n";
     }
 
+    // Initialize parameters on the variables stack with the correct offset
     int paramOffset = BIT_64_REG_SIZE * 2;
 
     for (const auto &param: functionDeclarationStmt->params) {
@@ -421,6 +471,7 @@ void Generator::convertFunctionDeclarationToAsm(FunctionDeclarationStmtP functio
         paramOffset += paramSize;
     }
 
+    // Calculate and store the total size of parameters
     this->paramsSize = paramOffset - (BIT_64_REG_SIZE * 2);
 }
 

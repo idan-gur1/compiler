@@ -271,7 +271,7 @@ ProgramTree *Parser::parseProgram() {
     this->programTree = new ProgramTree();
     ParserException::programTree = this->programTree;
 
-    for (auto const &funcTuple: builtInFunctions) {
+    for (auto const &funcTuple: BuiltinFunctions::builtInFunctions) {
         auto function = new NodeFunction(get<1>(funcTuple), get<2>(funcTuple),
                                          get<0>(funcTuple), get<3>(funcTuple));
 

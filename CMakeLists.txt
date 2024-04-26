@@ -20,4 +20,5 @@ add_executable(compiler main.cpp
         threeAddressExpressionsAndStatements.h
         compiler.cpp
         compiler.h
+        builtinFunctions.h
 )
