@@ -20,6 +20,7 @@ enum class TokenType {
     closeParenthesis,
     immediateInteger,
     identifier,
+    longKeyword,
     intKeyword,
     charKeyword,
     voidKeyword,

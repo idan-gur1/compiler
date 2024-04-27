@@ -48,6 +48,7 @@
 
 enum class VariableType {
     voidType,  // For functions
+    longType,
     intType,
     charType,
 };

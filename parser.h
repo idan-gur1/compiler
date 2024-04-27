@@ -445,6 +445,7 @@ private:
 };
 
 inline std::unordered_map<TokenType, VariableType> Parser::typeMap = {
+        {TokenType::longKeyword,  VariableType::longType},
         {TokenType::intKeyword,  VariableType::intType},
         {TokenType::charKeyword, VariableType::charType},
         {TokenType::voidKeyword, VariableType::voidType},

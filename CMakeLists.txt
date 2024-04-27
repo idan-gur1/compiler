@@ -18,7 +18,7 @@ add_executable(compiler main.cpp
         errorHandling.h
         tokenDefine.h
         threeAddressExpressionsAndStatements.h
-        compiler.cpp
-        compiler.h
+        compilerManager.cpp
+        compilerManager.h
         builtinFunctions.h
 )

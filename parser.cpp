@@ -148,7 +148,7 @@ std::tuple<NodeStmt *, bool> Parser::tryParseStmt() {
 
     if (firstToken.type == TokenType::identifier) {
         stmt = this->stmtByIdentifier(this->lexer->currentAndProceedToken());
-    } else if (firstToken.type == TokenType::intKeyword || firstToken.type == TokenType::charKeyword) {
+    } else if (typeMap.contains(firstToken.type) && firstToken.type != TokenType::voidKeyword) {
         stmt = this->stmtVariableDeclaration(typeMap[firstToken.type]);
     } else if (firstToken.type == TokenType::ifKeyword) {
         stmt = this->stmtIf();

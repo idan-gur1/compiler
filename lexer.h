@@ -173,6 +173,7 @@ inline std::unordered_map<char, std::tuple<TokenType, TokenType>> Lexer::equalTy
 };
 
 inline std::unordered_map<std::string, TokenType> Lexer::keywords = {
+        {"long",    TokenType::longKeyword},
         {"int",    TokenType::intKeyword},
         {"char",   TokenType::charKeyword},
         {"void",   TokenType::voidKeyword},

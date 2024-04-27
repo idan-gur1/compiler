@@ -351,6 +351,7 @@ private:
 };
 
 inline std::unordered_map<VariableType, int> Generator::typeSizes = {
+        {VariableType::longType, 8},
         {VariableType::intType,  4},
         {VariableType::charType, 1},
 };

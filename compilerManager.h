@@ -2,8 +2,8 @@
 // Created by idang on 25/04/2024.
 //
 
-#ifndef COMPILER_COMPILER_H
-#define COMPILER_COMPILER_H
+#ifndef COMPILER_COMPILERMANAGER_H
+#define COMPILER_COMPILERMANAGER_H
 
 #include <iostream>
 #include <fstream>
@@ -18,7 +18,7 @@ public:
     Compiler(int argc, char *argv[]) {
         if (argc < 4) {
             std::cout << "Enter the file to be compiled, IL file and target file." << std::endl;
-            std::cout << "Usage: ./compiler [filename].ig [filename].il [filename].asm" << std::endl;
+            std::cout << usageErrMsg << std::endl;
 
             exit(1);
         }
@@ -26,6 +26,10 @@ public:
         sourceFileName = argv[1];
         intermediateLanguageFileName = argv[2];
         targetFileName = argv[3];
+
+        checkExtension(sourceFileName, "ig");
+        checkExtension(intermediateLanguageFileName, "il");
+        checkExtension(targetFileName, "asm");
     }
 
     ~Compiler() {
@@ -52,6 +56,8 @@ public:
     int compileProgram();
 
 private:
+    inline static const std::string usageErrMsg = "Usage: ./compiler [filename].ig [filename].il [filename].asm";
+
     std::string sourceFileName;
     std::string intermediateLanguageFileName;
     std::string targetFileName;
@@ -69,7 +75,9 @@ private:
      * @throws FileOpenException if the source file cannot be opened.
      */
     std::string getSourceCode();
+
+    void checkExtension(std::string filename, std::string ext);
 };
 
 
-#endif //COMPILER_COMPILER_H
+#endif //COMPILER_COMPILERMANAGER_H

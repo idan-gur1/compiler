@@ -6,7 +6,7 @@
 #include "intermediateCodeGenerator.h"
 #include "errorHandling.h"
 #include "generation.h"
-#include "compiler.h"
+#include "compilerManager.h"
 
 
 int main(int argc, char *argv[]) {
