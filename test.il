@@ -1,18 +1,3 @@
-Function outputString  MaxTemp: 0 Params: str 
-ScopeEnter Vals: none
-outputStringWhile1:
-Goto outputStringWhile1Condition
-outputStringWhile1Body:
-ScopeEnter Vals: none
-PushParam str[0]
-Call outputChar
-str = &str[1]
-ScopeExit
-outputStringWhile1Condition:
-GotoIfNotZero str[0] outputStringWhile1Body
-ScopeExit
-outputStringEnd:
-EndFunction
 Function fib  MaxTemp: 2 Params: n 
 ScopeEnter Vals: none
 fibIf1:
@@ -113,7 +98,7 @@ ScopeExit
 infRecEnd:
 EndFunction
 Function main  MaxTemp: 1 Params: none
-ScopeEnter Vals: arr ptr name 
+ScopeEnter Vals: arr ptr name readVal 
 arr[0] = 15
 arr[1] = 8
 PushParam 8
@@ -141,11 +126,16 @@ name[4] = 32
 name[5] = 103
 name[6] = 117
 name[7] = 114
-name[8] = 0
+PushParam 8
 PushParam &name
 Call outputString
 PushParam 10
 Call outputChar
+PushParam 8
+PushParam &name
+temp1 := RetValOf Call inputString
+readVal = temp1
+PushParam readVal
 PushParam &name
 Call outputString
 PushParam 10

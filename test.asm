@@ -21,6 +21,19 @@ mov rax, 0x3c            ; syscall number for sys_exit
 mov rdi, 1               ; exit code for error
 syscall
 
+inputString:
+push rbp
+mov rbp, rsp
+mov rax, 0                   ; syscall number for sys_read
+mov rdi, 0                   ; file descriptor 0 (stdin)
+mov rsi, QWORD [rbp + 16]    ; buffer to store the character read
+movsx rdx, DWORD [rbp + 24]  ; bytes to read
+syscall
+mov BYTE [rsi + rax - 1], 0
+dec rax
+leave
+ret 12
+
 outputChar:
 push rbp
 mov rbp, rsp
@@ -32,32 +45,16 @@ syscall
 leave
 ret 1
 
-outputString:     ; FUNCTION
-cmp r8, 200
-jae _overflow
+outputString:
 push rbp
 mov rbp, rsp
-outputStringWhile1:
-jmp outputStringWhile1Condition
-outputStringWhile1Body:
-mov rax, QWORD [rbp + 16]
-movsx rax, BYTE [rax + 1 * 0]
-sub rsp, 1
-mov BYTE [rbp - 1], al
-inc r8
-call outputChar
-dec r8
-mov rax, QWORD [rbp + 16]
-lea rax, [rax + 1 * 1]
-mov QWORD [rbp + 16], rax
-outputStringWhile1Condition:
-mov rax, QWORD [rbp + 16]
-movsx rax, BYTE [rax + 1 * 0]
-test rax, rax
-jnz outputStringWhile1Body
-outputStringEnd:
+mov rax, 1                   ; syscall number for sys_write
+mov rdi, 1                   ; file descriptor 1 (stdout)
+mov rsi, QWORD [rbp + 16]    ; pointer to the param
+movsx rdx, DWORD [rbp + 24]  ; bytes to write
+syscall
 leave
-ret 8
+ret 12
 
 fib:     ; FUNCTION
 cmp r8, 200
@@ -285,14 +282,14 @@ jae _overflow
 push rbp
 mov rbp, rsp
 sub rsp, 8
-sub rsp, 49
+sub rsp, 52
 mov rax, 15
 mov DWORD [rbp - 40 + 4 * 0], eax
 mov rax, 8
 mov DWORD [rbp - 40 + 4 * 1], eax
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 61], eax
+mov DWORD [rbp - 64], eax
 inc r8
 call fib
 dec r8
@@ -312,19 +309,19 @@ mov rax, 3
 mov DWORD [rbp - 40 + 4 * 7], eax
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 61], eax
+mov DWORD [rbp - 64], eax
 lea rax, [rbp - 40]
 sub rsp, 8
-mov QWORD [rbp - 69], rax
+mov QWORD [rbp - 72], rax
 inc r8
 call replaceMaxWithZero
 dec r8
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 61], eax
+mov DWORD [rbp - 64], eax
 lea rax, [rbp - 40]
 sub rsp, 8
-mov QWORD [rbp - 69], rax
+mov QWORD [rbp - 72], rax
 inc r8
 call getMaxPtr
 dec r8
@@ -340,51 +337,68 @@ mov rax, QWORD [rbp - 8]
 mov rbx, QWORD [rbp - 48]
 mov DWORD [rbx + 4 * 0], eax
 mov rax, 105
-mov BYTE [rbp - 57 + 1 * 0], al
+mov BYTE [rbp - 56 + 1 * 0], al
 mov rax, 100
-mov BYTE [rbp - 57 + 1 * 1], al
+mov BYTE [rbp - 56 + 1 * 1], al
 mov rax, 97
-mov BYTE [rbp - 57 + 1 * 2], al
+mov BYTE [rbp - 56 + 1 * 2], al
 mov rax, 110
-mov BYTE [rbp - 57 + 1 * 3], al
+mov BYTE [rbp - 56 + 1 * 3], al
 mov rax, 32
-mov BYTE [rbp - 57 + 1 * 4], al
+mov BYTE [rbp - 56 + 1 * 4], al
 mov rax, 103
-mov BYTE [rbp - 57 + 1 * 5], al
+mov BYTE [rbp - 56 + 1 * 5], al
 mov rax, 117
-mov BYTE [rbp - 57 + 1 * 6], al
+mov BYTE [rbp - 56 + 1 * 6], al
 mov rax, 114
-mov BYTE [rbp - 57 + 1 * 7], al
-mov rax, 0
-mov BYTE [rbp - 57 + 1 * 8], al
-lea rax, [rbp - 57]
+mov BYTE [rbp - 56 + 1 * 7], al
+mov rax, 8
+sub rsp, 4
+mov DWORD [rbp - 64], eax
+lea rax, [rbp - 56]
 sub rsp, 8
-mov QWORD [rbp - 65], rax
+mov QWORD [rbp - 72], rax
 inc r8
 call outputString
 dec r8
 mov rax, 10
 sub rsp, 1
-mov BYTE [rbp - 58], al
+mov BYTE [rbp - 61], al
 inc r8
 call outputChar
 dec r8
-lea rax, [rbp - 57]
+mov rax, 8
+sub rsp, 4
+mov DWORD [rbp - 64], eax
+lea rax, [rbp - 56]
 sub rsp, 8
-mov QWORD [rbp - 65], rax
+mov QWORD [rbp - 72], rax
+inc r8
+call inputString
+dec r8
+movsx rax, eax
+mov QWORD [rbp - 8], rax
+mov rax, QWORD [rbp - 8]
+mov DWORD [rbp - 60], eax
+movsx rax, DWORD [rbp - 60]
+sub rsp, 4
+mov DWORD [rbp - 64], eax
+lea rax, [rbp - 56]
+sub rsp, 8
+mov QWORD [rbp - 72], rax
 inc r8
 call outputString
 dec r8
 mov rax, 10
 sub rsp, 1
-mov BYTE [rbp - 58], al
+mov BYTE [rbp - 61], al
 inc r8
 call outputChar
 dec r8
 mov rax, QWORD [rbp - 48]
 movsx rax, DWORD [rax + 4 * 0]
 jmp mainEnd
-add rsp, 49
+add rsp, 52
 mainEnd:
 leave
 ret 0

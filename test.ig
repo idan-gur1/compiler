@@ -1,10 +1,3 @@
-void outputString(char *str) {
-    while (*str) {
-        outputChar(*str);
-        str = &str[1];
-    }
-}
-
 int fib(int n) {
     if (n == 1) {
         return 1;
@@ -68,7 +61,7 @@ int main() {
     int *ptr = getMaxPtr(arr, 8);
     *ptr = *ptr * 2;
 
-    char name[9];
+    char name[8];
     name[0] = 'i';
     name[1] = 'd';
     name[2] = 'a';
@@ -77,11 +70,13 @@ int main() {
     name[5] = 'g';
     name[6] = 'u';
     name[7] = 'r';
-    name[8] = '\0';
 
-    outputString(name);
+    outputString(name, 8);
     outputChar('\n');
-    outputString(name);
+
+    int readVal = inputString(name, 8);
+
+    outputString(name, readVal);
     outputChar('\n');
 
     return *ptr;
