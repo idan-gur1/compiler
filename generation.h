@@ -59,11 +59,11 @@ public:
     /**
      * @brief Constructor for the  Generator class.
      *
-     * @param ilGenerator The ILGenerator instance used for code generation.
+     * @param ilProgram The ThreeAddressProgram instance (IL representation) used for code generation.
      * @param outFileName The name of the output file for the generated assembly code.
      */
-    Generator(ILGenerator *ilGenerator, std::string outFileName) : outFileName(std::move(outFileName)) {
-        this->ilGenerator = ilGenerator;
+    Generator(ThreeAddressProgramP ilProgram, std::string outFileName) : outFileName(std::move(outFileName)) {
+        this->ilProgram = ilProgram;
     }
 
     void generateProgram();
@@ -96,8 +96,8 @@ private:
     // and which variables to pop from the 'variableStack' map
     std::stack<ScopeFrame> scopeFrameStack;
 
-    // Pointer to the ILGenerator responsible for generating intermediate language (IL) code
-    ILGenerator *ilGenerator;
+    // Pointer to the intermediate representation of the program
+    ThreeAddressProgramP ilProgram;
     // The name of the output file where the generated assembly code will be written
     std::string outFileName;
     // A stringstream used to accumulate the generated assembly code for the program

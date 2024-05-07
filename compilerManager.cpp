@@ -18,10 +18,10 @@ int Compiler::compileProgram() {
 
         // Generate intermediate language (IL) from program tree
         this->ilGenerator = new ILGenerator(this->programTree, this->intermediateLanguageFileName);
-        this->ilGenerator->generateProgramIL();
+        this->ilProgram = this->ilGenerator->generateProgramIL();
 
         // Generate machine code from intermediate language
-        this->codeGenerator = new Generator(ilGenerator, this->targetFileName);
+        this->codeGenerator = new Generator(this->ilProgram, this->targetFileName);
         this->codeGenerator->generateProgram();
 
     } catch (const CompilationException &e) {

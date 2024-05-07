@@ -36,6 +36,7 @@ public:
         std::cout << "Compilation finished - cleaning memory" << std::endl;
 
         delete this->codeGenerator;
+        delete this->ilProgram;
         delete this->ilGenerator;
         delete this->programTree;
         delete this->parser;
@@ -66,6 +67,7 @@ private:
     Parser *parser = nullptr;
     ProgramTreeP programTree = nullptr;
     ILGenerator *ilGenerator = nullptr;
+    ThreeAddressProgramP ilProgram = nullptr;
     Generator *codeGenerator = nullptr;
 
     /**

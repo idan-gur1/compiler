@@ -26,7 +26,7 @@ void Generator::generateProgram() {
                         "mov rdi, 1               ; exit code for error\n"
                         "syscall\n\n";
 
-    for (const auto &builtinName: this->ilGenerator->builtinFunctionsUsed) {
+    for (const auto &builtinName: this->ilProgram->builtinFunctionsUsed) {
         std::ifstream inputFile(PATH_TO_BUILTIN_FUNCTIONS_FOLDER + builtinName + ".asm");
 
         if (inputFile.fail()) {
@@ -42,7 +42,7 @@ void Generator::generateProgram() {
         inputFile.close();
     }
 
-    for (auto ilStmt: this->ilGenerator->ilStmts) {
+    for (auto ilStmt: this->ilProgram->ilStmts) {
         convertTAStmtToAsm(ilStmt);
     }
 

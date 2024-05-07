@@ -272,7 +272,7 @@ void ILGenerator::generateFunctionIL(NodeFunctionP function) {
 
 }
 
-void ILGenerator::generateProgramIL() {
+ThreeAddressProgram *ILGenerator::generateProgramIL() {
     // Generate intermediate code for each function in the program
     for (auto funcPtr: this->program->functions) {
         if (funcPtr->scope != nullptr) {
@@ -294,6 +294,7 @@ void ILGenerator::generateProgramIL() {
 
     outFile.close();
 
+    return new ThreeAddressProgram(this->ilStmts, this->builtinFunctionsUsed);
 }
 
 int ILGenerator::incCurrentTemp() {

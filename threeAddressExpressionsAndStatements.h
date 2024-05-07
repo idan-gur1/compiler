@@ -5,6 +5,8 @@
 #ifndef COMPILER_THREEADDRESSEXPRESSIONSANDSTATEMENTS_H
 #define COMPILER_THREEADDRESSEXPRESSIONSANDSTATEMENTS_H
 
+#include <utility>
+
 #include "treeNodes.h"
 
 class ThreeAddressExpr {
@@ -286,6 +288,24 @@ public:
     FunctionExitStmt() = default;
 };
 
+class ThreeAddressProgram {
+public:
+    std::list<ThreeAddressStmt *> ilStmts;
+    std::unordered_set<std::string> builtinFunctionsUsed;
+
+    ThreeAddressProgram(std::list<ThreeAddressStmt *> ilStmts, std::unordered_set<std::string> builtinFunctionsUsed)
+            : ilStmts(std::move(ilStmts)), builtinFunctionsUsed(std::move(builtinFunctionsUsed)) {
+
+    }
+
+    ~ThreeAddressProgram() {
+        for (const auto &ilStmt: ilStmts) {
+            delete ilStmt;
+        }
+    }
+};
+
+typedef ThreeAddressProgram *ThreeAddressProgramP;
 typedef ThreeAddressExpr *ThreeAddressExprP;
 typedef UniExpr *UniExprP;
 typedef UniTemp *UniTempP;

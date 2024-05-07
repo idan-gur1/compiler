@@ -42,11 +42,7 @@ public:
     /**
      * @brief Destructor to free memory allocated for generated intermediate code statements.
      */
-    ~ILGenerator() {
-        for (const auto &ilStmt: ilStmts) {
-            delete ilStmt;
-        }
-    }
+    ~ILGenerator() = default;
 
     /**
      * @brief Generates the intermediate code (IL) for the entire program.
@@ -57,7 +53,7 @@ public:
      *
      * @throws CompilationException if there is an error opening the output file.
      */
-    void generateProgramIL();
+    ThreeAddressProgram *generateProgramIL();
 
     /**
      * @brief Generates intermediate code (IL) for a specific function.
