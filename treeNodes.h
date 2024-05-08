@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <vector>
+#include <list>
 #include <unordered_set>
 #include "tokenDefine.h"
 
@@ -309,7 +310,7 @@ public:
 
 class NodeScope : public NodeStmt {
 public:
-    std::vector<NodeStmt *> stmts;
+    std::list<NodeStmt *> stmts;
     std::vector<Variable> vars;
 
     explicit NodeScope() = default;
@@ -411,7 +412,7 @@ public:
 
 class ProgramTree {
 public:
-    std::vector<NodeFunction *> functions;
+    std::list<NodeFunction *> functions;
 
     explicit ProgramTree() = default;
 

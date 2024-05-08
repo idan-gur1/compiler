@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <tuple>
+#include <list>
 #include <string>
 #include "treeNodes.h"
 
@@ -14,7 +15,7 @@
 class BuiltinFunctions {
 public:
     // A vector of tuples representing built-in functions with their names, return types, pointer types, and parameters
-    inline static std::vector<std::tuple<std::string, VariableType, bool,
+    inline static std::list<std::tuple<std::string, VariableType, bool,
             std::vector<Variable>>> builtInFunctions = {
             {"outputChar",   VariableType::voidType, false, {Variable("", VariableType::charType, false)}},
             {"outputString", VariableType::voidType, false, {Variable("", VariableType::charType, true),

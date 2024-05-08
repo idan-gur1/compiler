@@ -24,6 +24,8 @@ int Compiler::compileProgram() {
         this->codeGenerator = new Generator(this->ilProgram, this->targetFileName);
         this->codeGenerator->generateProgram();
 
+        std::cout << "Compilation successful" << std::endl;
+
     } catch (const CompilationException &e) {
         std::cout << e.what() << std::endl;
         return 1;
