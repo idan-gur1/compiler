@@ -396,7 +396,7 @@ void Generator::convertSetReturnValueToAsm(SetReturnValueStmtP setReturnValueStm
 
 void Generator::convertScopeEnterToAsm(ScopeEnterStmtP scopeEnterStmt) {
     // Initialize variables to track frame size and frame variables
-    std::unordered_set<std::string> frameVars;
+    std::vector<std::string> frameVars;
     int frameSize = 0;
 
     // Process each variable in the scope
@@ -404,7 +404,7 @@ void Generator::convertScopeEnterToAsm(ScopeEnterStmtP scopeEnterStmt) {
         int varSize = sizeByTypeAndPtr(var.type, var.ptrType, var.arrSize);
 
         // Add variable to frame variables and update frame size
-        frameVars.insert(var.name);
+        frameVars.push_back(var.name);
         frameSize += varSize;
 
         // Update the stack pointer to allocate space for the variable

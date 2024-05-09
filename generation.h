@@ -37,7 +37,7 @@ public:
 class ScopeFrame {
 public:
     int frameSize;
-    std::unordered_set<std::string> frameVars;
+    std::vector<std::string> frameVars;
 
     /**
      * @brief Constructor for the ScopeFrame class.
@@ -45,7 +45,7 @@ public:
      * @param frameSize The size of the scope frame.
      * @param frameVars The set of variables within the scope.
      */
-    ScopeFrame(int frameSize, std::unordered_set<std::string> frameVars) : frameSize(frameSize),
+    ScopeFrame(int frameSize, std::vector<std::string> frameVars) : frameSize(frameSize),
                                                                            frameVars(std::move(frameVars)) {
 
     }

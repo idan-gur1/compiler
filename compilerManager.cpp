@@ -52,7 +52,7 @@ std::string Compiler::getSourceCode() {
 
 void Compiler::checkExtension(std::string filename, std::string ext) {
     if (filename.substr(filename.find_last_of('.') + 1) != ext) {
-        std::cout << "Unknown extension for file " << filename << std::endl;
+        std::cout << "Unknown extension for file '" << filename << "' ." << ext << " expected" << std::endl;
         std::cout << usageErrMsg << std::endl;
 
         exit(1);
