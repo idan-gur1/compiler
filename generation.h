@@ -326,6 +326,8 @@ private:
      */
     void generateAsmFunctionCall(const std::string& funcName);
 
+    void readAndGenerateBuiltinFunctionCode(const std::string& builtin);
+
     /**
      * @brief Get the corresponding 'a' register by size.
      *

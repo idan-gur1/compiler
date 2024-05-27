@@ -89,16 +89,29 @@ public:
 };
 
 class AddrExpr : public ThreeAddressExpr {
+};
+
+class AddrVarExpr : public AddrExpr {
 public:
     VariableVal *addressable;
 
-    explicit AddrExpr(VariableVal *addressable) {
+    explicit AddrVarExpr(VariableVal *addressable) {
         this->addressable = addressable;
     }
 
-    ~AddrExpr() override {
+    ~AddrVarExpr() override {
         delete addressable;
     }
+};
+
+class AddrStrExpr : public AddrExpr {
+public:
+    std::string value;
+
+    explicit AddrStrExpr(std::string value) : value(std::move(value)) {
+    }
+
+    ~AddrStrExpr() override = default;
 };
 
 enum class ExprOperator {
@@ -292,9 +305,12 @@ class ThreeAddressProgram {
 public:
     std::list<ThreeAddressStmt *> ilStmts;
     std::unordered_set<std::string> builtinFunctionsUsed;
+    std::unordered_map<std::string, std::string> stringLiteralsUsed;
 
-    ThreeAddressProgram(std::list<ThreeAddressStmt *> ilStmts, std::unordered_set<std::string> builtinFunctionsUsed)
-            : ilStmts(std::move(ilStmts)), builtinFunctionsUsed(std::move(builtinFunctionsUsed)) {
+    ThreeAddressProgram(std::list<ThreeAddressStmt *> ilStmts, std::unordered_set<std::string> builtinFunctionsUsed,
+                        std::unordered_map<std::string, std::string> stringLiteralsUsed)
+            : ilStmts(std::move(ilStmts)), builtinFunctionsUsed(std::move(builtinFunctionsUsed)),
+              stringLiteralsUsed(std::move(stringLiteralsUsed)){
 
     }
 
@@ -315,6 +331,8 @@ typedef SubscriptableVariableVal *SubscriptableVariableValP;
 typedef LogicalNotExpr *LogicalNotExprP;
 typedef NumericNegExpr *NumericNegExprP;
 typedef AddrExpr *AddrExprP;
+typedef AddrVarExpr *AddrVarExprP;
+typedef AddrStrExpr *AddrStrExprP;
 typedef BinaryExpr *BinaryExprP;
 typedef ThreeAddressStmt *ThreeAddressStmtP;
 typedef TempAssignmentTAStmt *TempAssignmentTAStmtP;

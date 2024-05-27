@@ -28,6 +28,8 @@ public:
     // Set to store the names of built-in functions used in the program
     // Functions included here will be added to the assembly generation
     std::unordered_set<std::string> builtinFunctionsUsed;
+    // Unordered map to store the string literals' ids used in the program
+    std::unordered_map<std::string, std::string> stringLiteralsUsed;
 
     /**
      * @brief Constructor for the ILGenerator class.
@@ -128,6 +130,10 @@ private:
     int currentTemp = 0;
     // Maximum temporary variable identifier used in each function (getting zeroed each function generation)
     int maxTemp = 0;
+    // Counter for generating unique ids for string literals
+    int currentStrId = 0;
+
+    AddrExpr *generateAddrExpr(AddrNodeExprP addr);
 
     /**
      * @brief Generates intermediate representation (IL) for a numeric expression.

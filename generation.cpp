@@ -7,8 +7,13 @@
 void Generator::generateProgram() {
     this->programOut << "section .data\n"
                         "overflowErrMsg db 'Stack overflow, exiting', 0xa\n"
-                        "LEN equ $ - overflowErrMsg\n\n"
-                        "section .text\n"
+                        "LEN equ $ - overflowErrMsg\n";
+
+    for (const auto &literal: this->ilProgram->stringLiteralsUsed) {
+        this->programOut << literal.first << " db '" << literal.second << "', 0\n";
+    }
+
+    this->programOut << "\nsection .text\n"
                         "global _start\n"
                         "_start:\n"
                         "mov r8, 0                ; function call stack counter\n"
@@ -27,19 +32,7 @@ void Generator::generateProgram() {
                         "syscall\n\n";
 
     for (const auto &builtinName: this->ilProgram->builtinFunctionsUsed) {
-        std::ifstream inputFile(PATH_TO_BUILTIN_FUNCTIONS_FOLDER + builtinName + ".asm");
-
-        if (inputFile.fail()) {
-            inputFile.close();
-            throw CompilationException("Can't read builtin function " + builtinName);
-        }
-
-        std::stringstream fileBuffer;
-        fileBuffer << inputFile.rdbuf();
-
-        this->programOut << fileBuffer.str() << "\n\n";
-
-        inputFile.close();
+        this->readAndGenerateBuiltinFunctionCode(builtinName);
     }
 
     for (auto ilStmt: this->ilProgram->ilStmts) {
@@ -148,22 +141,26 @@ void Generator::convertUniExprToRegister(UniExprP expr, const std::string &reg) 
 }
 
 void Generator::convertAddrExprToRegister(AddrExprP expr, const std::string &reg) {
-    if (auto subVar = dynamic_cast<SubscriptableVariableValP>(expr->addressable)) {
-        // If subscriptable then used the 'getSubscriptableStackPosition' to get the address
-        std::string stackPos = getSubscriptableStackPosition(subVar, reg);
-        this->programOut << "lea " << reg << ", " << stackPos << "\n";
-    } else {
-        // Otherwise load as a regular variable
-        Variable var = expr->addressable->var;
-        VariableStackData varData = this->variableStack[var.name].top();
-
-        std::string varBaseAddr = getStackAddr(varData);
-
-        if (var.ptrType) {
-            // If the variable is a pointer then the address is its value
-            this->programOut << "mov " << reg << ", QWORD [" << varBaseAddr << "]\n";
+    if (auto addrStr = dynamic_cast<AddrStrExprP>(expr)) {
+        this->programOut << "mov " << reg << ", " << addrStr->value << "\n";
+    } else if (auto addrVar = dynamic_cast<AddrVarExprP>(expr)) {
+        if (auto subVar = dynamic_cast<SubscriptableVariableValP>(addrVar->addressable)) {
+            // If subscriptable then used the 'getSubscriptableStackPosition' to get the address
+            std::string stackPos = getSubscriptableStackPosition(subVar, reg);
+            this->programOut << "lea " << reg << ", " << stackPos << "\n";
         } else {
-            this->programOut << "lea " << reg << ", [" << varBaseAddr << "]\n";
+            // Otherwise load as a regular variable
+            Variable var = addrVar->addressable->var;
+            VariableStackData varData = this->variableStack[var.name].top();
+
+            std::string varBaseAddr = getStackAddr(varData);
+
+            if (var.ptrType) {
+                // If the variable is a pointer then the address is its value
+                this->programOut << "mov " << reg << ", QWORD [" << varBaseAddr << "]\n";
+            } else {
+                this->programOut << "lea " << reg << ", [" << varBaseAddr << "]\n";
+            }
         }
     }
 }
@@ -484,6 +481,22 @@ void Generator::generateAsmFunctionCall(const std::string &funcName) {
     this->programOut << "inc r8\n"
                         "call " << funcName << "\n"
                      << "dec r8\n";
+}
+
+void Generator::readAndGenerateBuiltinFunctionCode(const std::string &builtin) {
+    std::ifstream inputFile(PATH_TO_BUILTIN_FUNCTIONS_FOLDER + builtin + ".asm");
+
+    if (inputFile.fail()) {
+        inputFile.close();
+        throw CompilationException("Can't read builtin function " + builtin);
+    }
+
+    std::stringstream fileBuffer;
+    fileBuffer << inputFile.rdbuf();
+
+    this->programOut << fileBuffer.str() << "\n\n";
+
+    inputFile.close();
 }
 
 std::string Generator::getAxRegisterBySize(int size) {

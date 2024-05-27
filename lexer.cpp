@@ -25,8 +25,10 @@ void Lexer::analyseSource() {
             generateTokenFromDoubleType(cCur);
         } else if (equalTypes.contains(cCur)) {
             generateTokenFromEqualType(cCur);
-        } else if (cCur == '\'') {
+        } else if (cCur == charLiteralDefinition) {
             generateNumTokenFromCharDec();
+        } else if (cCur == stringLiteralDefinition) {
+            generateStringLiteral();
         } else if (std::isdigit(cCur)) {
             generateTokenByDigit(cCur);
         } else if (std::isalpha(cCur)) {
@@ -55,7 +57,7 @@ void Lexer::generateTokenByDigit(char cCur) {
         buffer.push_back(this->currentAndProceed());
     }
     if (this->hasBuffer() && std::isalpha(this->current())) {
-        throw LexicalAnalysisException("Invalid character '" + std::string(1, cCur) + "'");
+        throw LexicalAnalysisException("Invalid character '" + std::string(1, cCur) + "' in immediate integer");
     }
 
     this->tokens.push_back(Token(TokenType::immediateInteger, buffer));
@@ -94,9 +96,17 @@ void Lexer::generateTokenFromEqualType(char cCur) {
 }
 
 void Lexer::generateNumTokenFromCharDec() {
+    if (!this->hasBuffer()) {
+        throw LexicalAnalysisException("Unexpected EOF");
+    }
+
     char innerVal = this->currentAndProceed();
 
-    if (innerVal == '\\') {
+    if (innerVal == EscapedCharLiteralDefinition) {
+        if (!this->hasBuffer()) {
+            throw LexicalAnalysisException("Unexpected EOF");
+        }
+
         char escapable = this->currentAndProceed();
 
         if (!escapeChars.contains(escapable)) {
@@ -106,11 +116,25 @@ void Lexer::generateNumTokenFromCharDec() {
         innerVal = escapeChars[escapable];
     }
 
-    if (this->currentAndProceed() != '\'') {
+    if (!this->hasBuffer() || this->currentAndProceed() != charLiteralDefinition) {
         throw LexicalAnalysisException("Expected ' At the end of char declaration");
     }
 
     this->tokens.push_back(Token(TokenType::immediateInteger, std::to_string(innerVal)));
+}
+
+void Lexer::generateStringLiteral() {
+    std::string buffer;
+
+    while (this->hasBuffer() && this->current() != stringLiteralDefinition) {
+        buffer.push_back(this->currentAndProceed());
+    }
+
+    if (!this->hasBuffer() || this->currentAndProceed() != stringLiteralDefinition) {
+        throw LexicalAnalysisException("Expected \" At the end of string literal declaration");
+    }
+
+    this->tokens.push_back(Token(TokenType::stringLiteral, buffer));
 }
 
 bool Lexer::hasNextToken() {

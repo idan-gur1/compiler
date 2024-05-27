@@ -13,7 +13,7 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
 
     NodeExpr *innerExpr = this->parseExpr();
 
-    auto *ptr = dynamic_cast<AddrNodeExpr *>(innerExpr);
+    auto *ptr = dynamic_cast<AddrVarNodeExpr *>(innerExpr);
     auto *func = dynamic_cast<NodeFunctionCall *>(innerExpr);
 
     if (var.ptrType != this->ptrUsedInExpr) {
@@ -21,7 +21,8 @@ NodeStmt *Parser::stmtPrimitiveAssignment(const Variable &var) {
         throw SemanticAnalysisException("Invalid assignment to identifier '" + var.name + "'");
     }
 
-    if ((ptr && ptr->target->variable.type != var.type) || (func && func->function->returnPtr && func->function->returnType != var.type)) {
+    if ((ptr && ptr->target->variable.type != var.type) ||
+        (func && func->function->returnPtr && func->function->returnType != var.type)) {
         delete innerExpr;
         throw SemanticAnalysisException("Incompatible pointer type assignment to '" + var.name + "'");
     }

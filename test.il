@@ -1,3 +1,6 @@
+Start string literals definition
+literal1 = 'Idan'
+End string literals definition
 Function fib  MaxTemp: 2 Params: n 
 ScopeEnter Vals: none
 fibIf1:
@@ -98,7 +101,7 @@ ScopeExit
 infRecEnd:
 EndFunction
 Function main  MaxTemp: 1 Params: none
-ScopeEnter Vals: arr ptr name readVal 
+ScopeEnter Vals: arr ptr name readVal myName 
 arr[0] = 15
 arr[1] = 8
 PushParam 8
@@ -137,6 +140,12 @@ temp1 := RetValOf Call inputString
 readVal = temp1
 PushParam readVal
 PushParam &name
+Call outputString
+PushParam 9
+Call outputChar
+myName = [literal1]
+PushParam 4
+PushParam &myName
 Call outputString
 PushParam 10
 Call outputChar

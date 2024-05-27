@@ -77,6 +77,11 @@ int main() {
     int readVal = inputString(name, 8);
 
     outputString(name, readVal);
+    outputChar('\t');
+
+    char *myName = "Idan";
+
+    outputString(myName, 4);
     outputChar('\n');
 
     return *ptr;

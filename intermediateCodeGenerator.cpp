@@ -152,18 +152,32 @@ UniExpr *ILGenerator::generateNumericExprIL(NodeExprP expr) {
     return nullptr;
 }
 
-ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
-    if (auto addr = dynamic_cast<AddrNodeExprP>(expr)) {
+AddrExpr *ILGenerator::generateAddrExpr(AddrNodeExprP addr) {
+    if (auto addrVar = dynamic_cast<AddrVarNodeExpr *>(addr)) {
         VariableVal *ret;
 
         // Check if subscriptable and get the index if yes
-        if (auto sub = dynamic_cast<NodeSubscriptableVariableTerminalP>(addr->target)) {
+        if (auto sub = dynamic_cast<NodeSubscriptableVariableTerminalP>(addrVar->target)) {
             ret = new SubscriptableVariableVal(sub->variable, generateNumericExprIL(sub->index));
         } else {
-            ret = new VariableVal(addr->target->variable);
+            ret = new VariableVal(addrVar->target->variable);
         }
 
-        return new AddrExpr(ret);
+        return new AddrVarExpr(ret);
+    } else if (auto addrStr = dynamic_cast<AddrStrNodeExpr *>(addr)) {
+        std::string id = "literal" + std::to_string(++currentStrId);
+
+        stringLiteralsUsed[id] = addrStr->value;
+
+        return new AddrStrExpr(id);
+    }
+
+    return nullptr;
+}
+
+ThreeAddressExpr *ILGenerator::generateExprIL(NodeExprP expr) {
+    if (auto addr = dynamic_cast<AddrNodeExprP>(expr)) {
+        return generateAddrExpr(addr);
     }
 
     return generateNumericExprIL(expr);
@@ -287,6 +301,14 @@ ThreeAddressProgram *ILGenerator::generateProgramIL() {
         throw FileOpenException(this->outfileName);
     }
 
+    outFile << "Start string literals definition\n";
+
+    for (const auto &literal: stringLiteralsUsed) {
+        outFile << literal.first << " = '" << literal.second << "'\n";
+    }
+
+    outFile << "End string literals definition\n";
+
     // Write each generated statement to the output file
     for (ThreeAddressStmt *tasP: this->ilStmts) {
         outFile << ilStmtToStr(tasP);
@@ -294,7 +316,7 @@ ThreeAddressProgram *ILGenerator::generateProgramIL() {
 
     outFile.close();
 
-    return new ThreeAddressProgram(this->ilStmts, this->builtinFunctionsUsed);
+    return new ThreeAddressProgram(this->ilStmts, this->builtinFunctionsUsed, this->stringLiteralsUsed);
 }
 
 int ILGenerator::incCurrentTemp() {
@@ -335,8 +357,10 @@ std::string ILGenerator::ilExprToStr(ThreeAddressExprP taExpr) {
         strStream << "!" << ilExprToStr(logicalNot->expr);
     } else if (auto numericNeg = dynamic_cast<NumericNegExprP>(taExpr)) {
         strStream << "-" << ilExprToStr(numericNeg->expr);
-    } else if (auto addr = dynamic_cast<AddrExprP>(taExpr)) {
-        strStream << "&" << ilExprToStr(addr->addressable);
+    } else if (auto addrVar = dynamic_cast<AddrVarExprP>(taExpr)) {
+        strStream << "&" << ilExprToStr(addrVar->addressable);
+    } else if (auto addrStr = dynamic_cast<AddrStrExprP>(taExpr)) {
+        strStream << "[" << addrStr->value << "]";
     } else if (auto binary = dynamic_cast<BinaryExprP>(taExpr)) {
         strStream << ilExprToStr(binary->left) << ILGenerator::exprOperatorToStr[binary->op]
                   << ilExprToStr(binary->right);

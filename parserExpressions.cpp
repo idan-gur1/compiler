@@ -27,7 +27,7 @@ NodeExpr *Parser::FactorByIdentifier(const Token &ident, bool ptrNotAllowed) {
 
         this->ptrUsedInExpr = true;
 
-        return new AddrNodeExpr(new NodeVariableTerminal(var));
+        return new AddrVarNodeExpr(new NodeVariableTerminal(var));
     }
 
     return new NodeSubscriptableVariableTerminal(var, parseArrayBrackets());
@@ -63,20 +63,28 @@ NodeExpr *Parser::parseFactor(bool ptrNotAllowed) {
         throw SyntaxAnalysisException("Expression expected");
     }
 
-    Token currentToken = this->lexer->currentToken();
+    Token currentToken = this->lexer->currentAndProceedToken();
 
-    if (this->checkForTokenTypeAndConsumeIfYes(TokenType::immediateInteger)) {
+    if (currentToken.type == TokenType::immediateInteger) {
         return new NodeImIntTerminal(currentToken);
-    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::identifier)) {
+    } else if (currentToken.type == TokenType::identifier) {
         return FactorByIdentifier(currentToken, ptrNotAllowed);
-    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::mult)) {
+    } else if (currentToken.type == TokenType::mult) {
         return FactorByMultToken();
-    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::minus)) {
+    } else if (currentToken.type == TokenType::minus) {
         return new NodeNumericNegExpr(this->parseFactor(true));
-    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::exclamation)) {
+    } else if (currentToken.type == TokenType::exclamation) {
         return new NodeLogicalNotExpr(this->parseFactor(true));
-    } else if (this->checkForTokenTypeAndConsumeIfYes(TokenType::openParenthesis)) {
+    } else if (currentToken.type == TokenType::openParenthesis) {
         return FactorByOpenParenthesis();
+    } else if (currentToken.type == TokenType::stringLiteral) {
+        if (ptrNotAllowed) {
+            throw SemanticAnalysisException("Illegal declaration of string literal");
+        }
+
+        this->ptrUsedInExpr = true;
+
+        return new AddrStrNodeExpr(currentToken.val);
     }
 
     throw SyntaxAnalysisException("Expression expected");
@@ -273,7 +281,7 @@ NodeExpr *Parser::parseAddrExpr() {
 
     this->ptrUsedInExpr = true;
 
-    return new AddrNodeExpr(varTerminal);
+    return new AddrVarNodeExpr(varTerminal);
 }
 
 NodeExpr *Parser::parseExpr() {

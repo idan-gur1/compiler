@@ -1,6 +1,7 @@
 section .data
 overflowErrMsg db 'Stack overflow, exiting', 0xa
 LEN equ $ - overflowErrMsg
+literal1 db 'Idan', 0
 
 section .text
 global _start
@@ -282,14 +283,14 @@ jae _overflow
 push rbp
 mov rbp, rsp
 sub rsp, 8
-sub rsp, 52
+sub rsp, 60
 mov rax, 15
 mov DWORD [rbp - 40 + 4 * 0], eax
 mov rax, 8
 mov DWORD [rbp - 40 + 4 * 1], eax
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 inc r8
 call fib
 dec r8
@@ -309,19 +310,19 @@ mov rax, 3
 mov DWORD [rbp - 40 + 4 * 7], eax
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 lea rax, [rbp - 40]
 sub rsp, 8
-mov QWORD [rbp - 72], rax
+mov QWORD [rbp - 80], rax
 inc r8
 call replaceMaxWithZero
 dec r8
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 lea rax, [rbp - 40]
 sub rsp, 8
-mov QWORD [rbp - 72], rax
+mov QWORD [rbp - 80], rax
 inc r8
 call getMaxPtr
 dec r8
@@ -354,25 +355,25 @@ mov rax, 114
 mov BYTE [rbp - 56 + 1 * 7], al
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 lea rax, [rbp - 56]
 sub rsp, 8
-mov QWORD [rbp - 72], rax
+mov QWORD [rbp - 80], rax
 inc r8
 call outputString
 dec r8
 mov rax, 10
 sub rsp, 1
-mov BYTE [rbp - 61], al
+mov BYTE [rbp - 69], al
 inc r8
 call outputChar
 dec r8
 mov rax, 8
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 lea rax, [rbp - 56]
 sub rsp, 8
-mov QWORD [rbp - 72], rax
+mov QWORD [rbp - 80], rax
 inc r8
 call inputString
 dec r8
@@ -382,23 +383,40 @@ mov rax, QWORD [rbp - 8]
 mov DWORD [rbp - 60], eax
 movsx rax, DWORD [rbp - 60]
 sub rsp, 4
-mov DWORD [rbp - 64], eax
+mov DWORD [rbp - 72], eax
 lea rax, [rbp - 56]
 sub rsp, 8
-mov QWORD [rbp - 72], rax
+mov QWORD [rbp - 80], rax
+inc r8
+call outputString
+dec r8
+mov rax, 9
+sub rsp, 1
+mov BYTE [rbp - 69], al
+inc r8
+call outputChar
+dec r8
+mov rax, literal1
+mov QWORD [rbp - 68], rax
+mov rax, 4
+sub rsp, 4
+mov DWORD [rbp - 72], eax
+mov rax, QWORD [rbp - 68]
+sub rsp, 8
+mov QWORD [rbp - 80], rax
 inc r8
 call outputString
 dec r8
 mov rax, 10
 sub rsp, 1
-mov BYTE [rbp - 61], al
+mov BYTE [rbp - 69], al
 inc r8
 call outputChar
 dec r8
 mov rax, QWORD [rbp - 48]
 movsx rax, DWORD [rax + 4 * 0]
 jmp mainEnd
-add rsp, 52
+add rsp, 60
 mainEnd:
 leave
 ret 0

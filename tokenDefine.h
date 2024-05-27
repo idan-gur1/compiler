@@ -19,6 +19,7 @@ enum class TokenType {
     openParenthesis,
     closeParenthesis,
     immediateInteger,
+    stringLiteral,
     identifier,
     longKeyword,
     intKeyword,

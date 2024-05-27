@@ -60,6 +60,15 @@ public:
     Token currentAndProceedToken();
 
 private:
+    // Char definition starter
+    static const char charLiteralDefinition = '\'';
+
+    // Escaped char definition starter
+    static const char EscapedCharLiteralDefinition = '\\';
+
+    // String definition starter
+    static const char stringLiteralDefinition = '"';
+
     // Map of single-character token types
     static std::unordered_map<char, TokenType> singleTypes;
     // Map of double-character token types
@@ -111,6 +120,11 @@ private:
      *
      */
     void generateNumTokenFromCharDec();
+
+    /**
+     * @brief Generate String literal token from the input string out with the form "[string]"
+     */
+    void generateStringLiteral();
 
     /**
      * @brief Retrieves the current character in the source code.

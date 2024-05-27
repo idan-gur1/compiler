@@ -257,16 +257,29 @@ public:
 };
 
 class AddrNodeExpr : public NodeExpr {
+};
+
+class AddrVarNodeExpr : public AddrNodeExpr {
 public:
     NodeVariableTerminal *target;
 
-    explicit AddrNodeExpr(NodeVariableTerminal *target) {
+    explicit AddrVarNodeExpr(NodeVariableTerminal *target) {
         this->target = target;
     }
 
-    ~AddrNodeExpr() override {
+    ~AddrVarNodeExpr() override {
         delete target;
     }
+};
+
+class AddrStrNodeExpr : public AddrNodeExpr {
+public:
+    std::string value;
+
+    explicit AddrStrNodeExpr(std::string value) : value(std::move(value)) {
+    }
+
+    ~AddrStrNodeExpr() override = default;
 };
 //endregion
 
