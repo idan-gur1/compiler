@@ -10,7 +10,8 @@ void Generator::generateProgram() {
                         "LEN equ $ - overflowErrMsg\n";
 
     for (const auto &literal: this->ilProgram->stringLiteralsUsed) {
-        this->programOut << literal.first << " db '" << literal.second << "', 0\n";
+        // using 'backquotes' o support C styled escape chars
+        this->programOut << literal.first << " db `" << literal.second << "`, 0\n";
     }
 
     this->programOut << "\nsection .text\n"
