@@ -1,7 +1,7 @@
 section .data
 overflowErrMsg db 'Stack overflow, exiting', 0xa
 LEN equ $ - overflowErrMsg
-literal1 db 'Idan', 0
+literal1 db `Idan`, 0
 
 section .text
 global _start

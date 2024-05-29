@@ -126,7 +126,7 @@ void Lexer::generateNumTokenFromCharDec() {
 void Lexer::generateStringLiteral() {
     std::string buffer;
 
-    while (this->hasBuffer() && this->current() != stringLiteralDefinition) {
+    while (this->hasBuffer() && this->current() != '\n' && this->current() != stringLiteralDefinition) {
         buffer.push_back(this->currentAndProceed());
     }
 
